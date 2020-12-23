@@ -33,7 +33,8 @@ module Model =
             CourseID: string
             PlanID: string
             MainWindow: TestWindow
-            EsapiContext: EsapiContext option
+            //EsapiContext: EsapiContext option
+            EsapiContext: string option
             Args: StandaloneArgs
             InitCtx: SynchronizationContext
         }
@@ -41,7 +42,7 @@ module Model =
     // Messages
     type Msg =
         | Login        
-        | LoginSuccess of EsapiContext
+        | LoginSuccess of string
         | LoginFailed of exn
 
     // Initial Model
