@@ -6,7 +6,7 @@
                  xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                  mc:Ignorable="d"
                  Title="Checklist"
-                 Height="200"
+                 Height="500"
                  Width="500"
                  WindowStartupLocation="CenterScreen"
                  Background="{DynamicResource MahApps.Brushes.Window.Background}">
@@ -14,7 +14,8 @@
     <mah:MetroWindow.RightWindowCommands>
         <mah:WindowCommands>
             <TextBlock Text="{Binding Path=PatientName, FallbackValue='PatientName'}"
-                       VerticalAlignment="Center"/>
+                       VerticalAlignment="Center"
+                       Margin="5,0"/>
         </mah:WindowCommands>
     </mah:MetroWindow.RightWindowCommands>
 
@@ -34,6 +35,5 @@
         <TextBlock Text="{Binding PatientName, StringFormat='Patient Name: {0}'}" VerticalAlignment="Center" HorizontalAlignment="Center" />
         <TextBlock Text="{Binding CourseID, StringFormat='Course: {0}'}" VerticalAlignment="Center" HorizontalAlignment="Center" />
         <TextBlock Text="{Binding PlanID, StringFormat='Plan: {0}'}" VerticalAlignment="Center" HorizontalAlignment="Center" />
-        <Button Content="Login" Command="{Binding Login}"/>
     </StackPanel>
 </mah:MetroWindow>

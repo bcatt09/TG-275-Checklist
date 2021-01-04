@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyName>elm.esapi</AssemblyName>
+    <AssemblyName>elm1.esapi</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

@@ -20,14 +20,12 @@ module Program =
 
     [<EntryPoint; STAThread>]
     let main args =
-        let printThread msg = MessageBox.Show($"[{Thread.CurrentThread.ManagedThreadId}] - {msg}") |> ignore
-        //let fixedArgs = String.Join(" ", args).Split('\\')
-        let fixedArgs = [|"4703528"; "1 SACRUM"; "SACRUM_2"|]
         let standaloneArgs = 
+            let tempArgs = if args.Length = 0 then [|"4703528"; "1 SACRUM"; "SACRUM_2"|] else args  // Use a known patient if args are blank (launched outside of Eclipse)
             {
-                PatientID = fixedArgs.[0]
-                CourseID = fixedArgs.[1]
-                PlanID = fixedArgs.[2]
+                PatientID = tempArgs.[0]
+                CourseID = tempArgs.[1]
+                PlanID = tempArgs.[2]
             }
 
         let window = new TestWindow()
