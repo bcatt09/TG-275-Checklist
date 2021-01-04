@@ -25,36 +25,46 @@ module Model =
             CurrentUser: User
         }
 
+    type PatientInfo =
+        {
+            PatientName: string
+            CourseID: string
+            PlanID: string
+            CurrentUser: string
+        }
+
     type Model =
         { 
             Test: string
-            PatientName: string
-            CurrentUser: string
-            CourseID: string
-            PlanID: string
+            PatientInfo: PatientInfo
             MainWindow: TestWindow
-            //EsapiContext: EsapiContext option
-            EsapiContext: string option
+            EsapiContext: PatientInfo option//EsapiContext option
+            //EsapiContext: string option
             Args: StandaloneArgs
-            InitCtx: SynchronizationContext
+            //InitCtx: SynchronizationContext
         }
 
     // Messages
     type Msg =
         | Login        
-        | LoginSuccess of string
+        | LoginSuccess of PatientInfo
         | LoginFailed of exn
+        //| GetPatientInfoSuccess of PatientInfo
+        //| GetPatientInfoFailed of exn
 
     // Initial Model
-    let init (ctx:SynchronizationContext) (window:TestWindow) (args:StandaloneArgs) =
+    let init (*ctx:SynchronizationContext*) (window:TestWindow) (args:StandaloneArgs) =
         { 
             Test = ""
-            PatientName = ""
-            CurrentUser = ""
-            CourseID = ""
-            PlanID = ""
+            PatientInfo =
+                {
+                    PatientName = ""
+                    CurrentUser = ""
+                    CourseID = ""
+                    PlanID = ""
+                }
             MainWindow = window
             EsapiContext = None
             Args = args
-            InitCtx = ctx
-        }, Cmd.ofMsg Login
+            //InitCtx = ctx
+        }, Cmd.none//Cmd.ofMsg Login

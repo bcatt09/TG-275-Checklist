@@ -10,43 +10,33 @@ open Update
 open System.Threading
 open System.Windows
 open System.Windows.Threading
+open System.Windows.Controls
+open System.Threading.Tasks.Schedulers
+open System.Threading.Tasks
+open VMS.TPS.Common.Model.API
 
 module Program =
 
 
     [<EntryPoint; STAThread>]
     let main args =
-        async{
-            let ctx = SynchronizationContext.Current
-            MessageBox.Show($"Thread: {Thread.CurrentThread.ManagedThreadId}", "Initial (ESAPI)") |> ignore
+        let printThread msg = MessageBox.Show($"[{Thread.CurrentThread.ManagedThreadId}] - {msg}") |> ignore
+        //let fixedArgs = String.Join(" ", args).Split('\\')
+        let fixedArgs = [|"4703528"; "1 SACRUM"; "SACRUM_2"|]
+        let standaloneArgs = 
+            {
+                PatientID = fixedArgs.[0]
+                CourseID = fixedArgs.[1]
+                PlanID = fixedArgs.[2]
+            }
 
-            //let fixedArgs = String.Join(" ", args).Split('\\')
-            let fixedArgs = [|"5050951"; "1 Prostate"; "Prost_1"|]
-            let standaloneArgs = 
-                {
-                    PatientID = fixedArgs.[0]
-                    CourseID = fixedArgs.[1]
-                    PlanID = fixedArgs.[2]
-                }
+        let window = new TestWindow()
+        
 
-            let startElmish ctx =
-                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher))
-                let window = new TestWindow()
-
-                Program.mkProgramWpf (fun () -> init ctx window standaloneArgs) update bindings
-                |> Program.withConsoleTrace
-                |> Program.runWindowWithConfig
-                    { ElmConfig.Default with LogConsole = true; Measure = true }
-                    (window) |> ignore
-
-            let start() = startElmish ctx
-
-            //do! Async.SwitchToNewThread()
-            //Thread.CurrentThread.SetApartmentState(ApartmentState.STA)
-            let uiThread = new Thread(start)
-            uiThread.SetApartmentState(ApartmentState.STA)
-            uiThread.Start()
-            //MessageBox.Show($"Thread: {Thread.CurrentThread.ManagedThreadId}", "New context (UI)") |> ignore
-        } |> Async.RunSynchronously
+        Program.mkProgramWpf (fun () -> init window standaloneArgs) update bindings
+        |> Program.withConsoleTrace
+        |> Program.runWindowWithConfig
+            { ElmConfig.Default with LogConsole = true; Measure = true }
+            (window) |> ignore
 
         1
