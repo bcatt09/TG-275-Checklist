@@ -9,8 +9,6 @@ open Esapi
 open Model
 open TG275Checklist.Views
 
-open System.Threading
-
 module Update =
     
     // Initial Eclipse login function
@@ -34,32 +32,29 @@ module Update =
 
             // Log in to Eclipse and get initial patient info
             try
-                do! esapiAsync.LogInAsync()
-                do! esapiAsync.OpenPatientAsync(args.PatientID)
-                let! patientInfo = 
-                    esapiAsync { 
-                        return fun (app:Application, pat:Patient) ->
-                            let course = 
-                                pat.Courses 
-                                |> Seq.filter (fun x -> x.Id = args.CourseID) 
-                                |> Seq.exactlyOne
-                            let plan = 
-                                course.PlanSetups
-                                |> Seq.filter (fun x -> x.Id = args.PlanID)
-                                |> Seq.exactlyOne
-                            {
-                                PatientName = pat.Name
-                                CourseID = course.Id
-                                PlanID = plan.Id
-                                CurrentUser = app.CurrentUser.Name
-                            }
-                        }
+                do! esapi.LogInAsync()
+                do! esapi.OpenPatientAsync(args.PatientID)
+                let! patientInfo = esapi.Run(fun (pat : Patient, app : Application) ->
+                        let course = 
+                            pat.Courses 
+                            |> Seq.filter (fun x -> x.Id = args.CourseID) 
+                            |> Seq.exactlyOne
+                        let plan = 
+                            course.PlanSetups
+                            |> Seq.filter (fun x -> x.Id = args.PlanID)
+                            |> Seq.exactlyOne
+                        {
+                            PatientName = pat.Name
+                            CourseID = course.Id
+                            PlanID = plan.Id
+                            CurrentUser = app.CurrentUser.Name
+                        })
 
                 // Close Dialog
                 do! controller.CloseAsync() |> Async.AwaitTask
 
                 // Dispose of the Esapi service and Application to prevent crashing
-                window.Closed.AddHandler(fun _ _ -> esapiAsync.Dispose())
+                window.Closed.AddHandler(fun _ _ -> esapi.Dispose())
                 
                 return LoginSuccess patientInfo
             with ex ->

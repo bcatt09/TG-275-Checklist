@@ -5,7 +5,7 @@
 		<UseWpf>true</UseWpf>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<OutputType>WinExe</OutputType>
-		<AssemblyName>elm1</AssemblyName>
+		<AssemblyName>elm</AssemblyName>
 	</PropertyGroup>
 
 	<ItemGroup>
