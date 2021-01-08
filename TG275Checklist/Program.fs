@@ -5,8 +5,7 @@ open Elmish.WPF
 open System
 open TG275Checklist.Views
 
-open Model
-open Update
+open App
 open System.Threading
 open System.Windows
 open System.Windows.Threading
@@ -28,8 +27,7 @@ module Program =
                 PlanID = tempArgs.[2]
             }
 
-        let window = new TestWindow()
-        
+        let window = new MainWindow()
 
         Program.mkProgramWpf (fun () -> init window standaloneArgs) update bindings
         |> Program.withConsoleTrace

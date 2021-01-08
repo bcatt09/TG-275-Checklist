@@ -5,9 +5,9 @@ using System.Windows;
 
 namespace TG275Checklist.Views
 {
-    public partial class TestWindow : MetroWindow
+    public partial class MainWindow : MetroWindow
     {
-        public TestWindow()
+        public MainWindow()
         {
             InitializeComponent();
         }
