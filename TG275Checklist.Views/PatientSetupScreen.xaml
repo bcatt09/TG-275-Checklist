@@ -20,14 +20,53 @@
     </UserControl.Resources>
 
     <Grid>
-        <ListBox ItemsSource="{Binding PatientSetupFlags}">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Orientation="Horizontal">
-                        <CheckBox IsChecked="{Binding Flag, Mode=TwoWay}" Content="{Binding Text}"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition Height="35"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Plan Selection:" FontSize="24" Margin="150,15"/>
+            <ListBox ItemsSource="{Binding Courses}" Width="500">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Id}"/>
+                            <ListBox ItemsSource="{Binding Plans}">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="2"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" Content="{Binding Id}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </StackPanel>
+        <StackPanel Grid.Row="1">
+            <TextBlock Text="Patient Setup:" FontSize="24" Margin="150,15"/>
+            <ListBox ItemsSource="{Binding PatientSetupToggles}" 
+                 Grid.Row="1" Width="500">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="2"/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" Content="{Binding Text}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </StackPanel>
+        <Button Content="Next" 
+                Command="{Binding PatientSetupCompleted}"
+                Grid.Row="2" Width="100" Height="25"/>
     </Grid>
 </UserControl>

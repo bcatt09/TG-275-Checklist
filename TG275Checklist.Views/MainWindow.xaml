@@ -33,46 +33,18 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="75"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0"
-                Background="{StaticResource MahApps.Brushes.Gray8}">
-            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="20"/>
-                    <RowDefinition Height="20"/>
-                    <RowDefinition Height="20"/>
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0"
-                           Text="Patient: "/>
-                <TextBlock Grid.Row="1" Grid.Column="0"
-                           Text="Course: "/>
-                <TextBlock Grid.Row="2" Grid.Column="0"
-                           Text="Plan: "/>
-                <TextBlock Grid.Row="0" Grid.Column="1"
-                           Text="{Binding PatientName}"/>
-                <TextBlock Grid.Row="1" Grid.Column="1"
-                           Text="{Binding CourseID}"/>
-                <TextBlock Grid.Row="2" Grid.Column="1"
-                           Text="{Binding PlanID}"/>
-            </Grid>
-        </Border>
+        <views:PatientSetup DataContext="{Binding PatientSetup}" Grid.Row="0"/>
 
-        <views:PatientSetup DataContext="{Binding PatientSetup}" Grid.Row="1"/>
-
-        <StatusBar Grid.Row="2">
-            <StatusBarItem Content="{Binding Status}"/>
+        <StatusBar Grid.Row="1">
+            <StatusBarItem Content="{Binding StatusBarStatus}"/>
+            <ProgressBar Width="100" Visibility="{Binding StatusBarVisibility}" IsIndeterminate="{Binding StatusBarIsIndeterminate}"/>
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
-                    <StatusBarItem Content="Refresh"/>
-                    <Button Content="Button" Command="{Binding Debugton}" Background="Transparent" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" FontSize="12"/>
+                    <Button Content="Refresh" Command="{Binding Debugton}" Background="Transparent" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" FontSize="12"/>
                     <Separator Style="{StaticResource MahApps.Styles.Separator.StatusBar}"/>
                     <StatusBarItem Content="User: "/>
                     <StatusBarItem Content="{Binding CurrentUser}"/>
