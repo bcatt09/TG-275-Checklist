@@ -11,4 +11,17 @@
     <PackageReference Include="MahApps.Metro" Version="2.3.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="ChecklistScreen.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="ChecklistScreen.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
 </Project>

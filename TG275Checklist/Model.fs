@@ -6,6 +6,7 @@ open Elmish.WPF
 open Esapi
 open TG275Checklist.Views
 open VMS.TPS.Common.Model.API
+open type System.Windows.Visibility
 
 module ChecklistOptions =
     type Plan =
@@ -120,6 +121,7 @@ module PatientSetup =
         {
             Courses: Course list
             Toggles: Toggle list
+            Visibility: System.Windows.Visibility
         }
 
     // Initial model
@@ -127,6 +129,7 @@ module PatientSetup =
         {
             Courses = []
             Toggles = toggleList
+            Visibility = Visible
         }
     let initFromCourses (courses) = { init() with Courses = courses }
 
@@ -164,7 +167,7 @@ module PatientSetup =
                             else p) 
                     })
             }, Cmd.none, NoMainWindowMsg 
-        | NextButtonClicked -> m, Cmd.none, PatientSetupCompleted 
+        | NextButtonClicked -> { m with Visibility = Collapsed }, Cmd.none, PatientSetupCompleted 
                                                 { 
                                                     Plans = 
                                                         [ for c in m.Courses do
@@ -195,6 +198,7 @@ module PatientSetup =
             "Courses" |> Binding.subModelSeq((fun m -> m.Courses), (fun (c:Course) -> c.Id), courseBindings)
             "PatientSetupToggles" |> Binding.subModelSeq((fun m -> m.Toggles), (fun (t:Toggle) -> t.Id), toggleBindings)
             "PatientSetupCompleted" |> Binding.cmd NextButtonClicked
+            "PatientSetupVisibility" |> Binding.oneWay(fun m -> m.Visibility)
         ]
 
 module Checklist =
@@ -227,7 +231,23 @@ module Checklist =
             PlanDetails: PlanDetails
             Category: ChecklistCategory
             Checklist: ChecklistItem list
+            Visibility: System.Windows.Visibility
         }
+    let init () =
+        {
+            PlanDetails = { CourseId = ""; PlanId = "" }
+            Category = Prescription
+            Checklist = []
+            Visibility = Collapsed
+        }
+
+    type Msg =
+    | Message
+
+    let bindings () : Binding<Model, Msg> list =
+        [
+            "ChecklistVisibility" |> Binding.oneWay(fun m -> m.Visibility)
+        ]
 
 module App =
     open PatientSetup
@@ -246,6 +266,10 @@ module App =
             CurrentUser: string
         }
 
+    type CurrentScreen =
+    | PatientSetupScreen
+    | ChecklistScreen
+
     // Status Bar at bottom of window
     type StatusBar =
     | None of string
@@ -257,8 +281,9 @@ module App =
     // Main Model
     type Model =
         { 
+            CurrentScreen: CurrentScreen
             PatientSetupScreen: PatientSetup.Model
-            ChecklistList: Checklist.Model list
+            ChecklistListScreen: Checklist.Model
             ChecklistOptions: ChecklistOptions.ChecklistOptions
             SharedInfo: SharedInfo
             MainWindow: MainWindow
@@ -278,6 +303,7 @@ module App =
         | LoadCoursesFailed of exn
         | PatientSetupMsg of PatientSetup.Msg
         | LoadChecklistScreen
+        | ChecklistMsg of Checklist.Msg
 
 
         | Debugton
@@ -286,13 +312,14 @@ module App =
     let readyStatus = None "Ready"
     let init (window:MainWindow) (args:StandaloneApplicationArgs) =
         { 
+            CurrentScreen = PatientSetupScreen
             PatientSetupScreen = PatientSetup.init()
             SharedInfo =
                 {
                     PatientName = ""
                     CurrentUser = ""
                 }
-            ChecklistList = []
+            ChecklistListScreen = Checklist.init()
             ChecklistOptions = ChecklistOptions.emptyChecklistOptions
             MainWindow = window
             StatusBar = readyStatus
@@ -343,7 +370,7 @@ module App =
         | LoadCoursesIntoPatientSetup -> { m with StatusBar = Indeterminate { Status = "Loading Plans" } }, Cmd.OfAsync.either loadCoursesIntoPatientSetup () id LoadCoursesFailed
         | LoadCoursesSuccess courses -> { m with PatientSetupScreen = initFromCourses(courses); StatusBar = None "Ready" }, Cmd.none
         | LoadCoursesFailed x ->
-            System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Load Course from Eclips") |> ignore
+            System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Load Course from Eclipse") |> ignore
             { m with StatusBar = None "Failed to load courses from Eclipse" }, Cmd.none
         // Patient Setup Screen
         | PatientSetupMsg patSetupMsg -> 
@@ -351,7 +378,9 @@ module App =
             match patSetupExtraMsg with
             | NoMainWindowMsg -> { m with PatientSetupScreen = patSetupModel }, Cmd.none
             | PatientSetupCompleted options -> { m with PatientSetupScreen = patSetupModel; ChecklistOptions = options }, Cmd.ofMsg LoadChecklistScreen
-        | LoadChecklistScreen -> m, Cmd.ofMsg Debugton
+        | LoadChecklistScreen -> { m with CurrentScreen = ChecklistScreen; ChecklistListScreen = { m.ChecklistListScreen with Visibility = Visible } }, Cmd.ofMsg Debugton
+        // Checklist Screen
+        | ChecklistMsg _ -> m, Cmd.none
 
         | Debugton -> System.Windows.MessageBox.Show(sprintf "Plans:\n%s\n\nOptions:\n%s"
                                     (m.ChecklistOptions.Plans |> List.map(fun p -> $"{p.PlanId} ({p.CourseId})") |> String.concat "\n")
@@ -365,11 +394,15 @@ module App =
             "PatientName" |> Binding.oneWay (fun m -> m.SharedInfo.PatientName)
             "CurrentUser" |> Binding.oneWay (fun m -> m.SharedInfo.CurrentUser)
             "StatusBarStatus" |> Binding.oneWay (fun m -> match m.StatusBar with | None status -> status | Indeterminate bar -> bar.Status | Determinate bar -> bar.Status)
-            "StatusBarVisibility" |> Binding.oneWay (fun m -> match m.StatusBar with | None _ -> System.Windows.Visibility.Collapsed | _ -> System.Windows.Visibility.Visible)
+            "StatusBarVisibility" |> Binding.oneWay (fun m -> match m.StatusBar with | None _ -> Collapsed | _ -> Visible)
             "StatusBarIsIndeterminate" |> Binding.oneWay (fun m -> match m.StatusBar with | Determinate _ -> false | _ -> true)
+            "CurrentScreen" |> Binding.oneWay(fun m -> m.CurrentScreen.ToString())
 
             // Patient Setup Screen
             "PatientSetup" |> Binding.subModel((fun m -> m.PatientSetupScreen), snd, PatientSetupMsg, PatientSetup.bindings)
+            
+            // Checklist Screen
+            "Checklist" |> Binding.subModel((fun m -> m.ChecklistListScreen), snd, ChecklistMsg, Checklist.bindings)
 
             "Debugton" |> Binding.cmd Debugton
         ]

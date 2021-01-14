@@ -5,6 +5,7 @@
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                  xmlns:views="clr-namespace:TG275Checklist.Views"
+                 xmlns:tg="clr-namespace:TG275Checklist"
                  mc:Ignorable="d"
                  Title="Checklist"
                  Height="500"
@@ -37,9 +38,13 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
-        <views:PatientSetup DataContext="{Binding PatientSetup}" Grid.Row="0"/>
+        <views:PatientSetup DataContext="{Binding PatientSetup}"
+                            Visibility="{Binding PatientSetupVisibility}"/>
+        <views:Checklist DataContext="{Binding Checklist}"
+                         Visibility="{Binding ChecklistVisibility, FallbackValue=Collapsed}"/>
 
-        <StatusBar Grid.Row="1">
+        <StatusBar Grid.Row="2">
+            <StatusBarItem Content="{Binding PatientSetupVisibility}"/>
             <StatusBarItem Content="{Binding StatusBarStatus}"/>
             <ProgressBar Width="100" Visibility="{Binding StatusBarVisibility}" IsIndeterminate="{Binding StatusBarIsIndeterminate}"/>
             <StatusBarItem HorizontalAlignment="Right">
