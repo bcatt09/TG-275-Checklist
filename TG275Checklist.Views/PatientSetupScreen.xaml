@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:TG275Checklist.Views"
+             xmlns:views="clr-namespace:TG275Checklist.Views"
+             xmlns:model="clr-namespace:TG275Checklist.Model;assembly=TG275Checklist.Model"
              x:Name="PatientSetupControl"
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="800">
@@ -25,43 +26,36 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="35"/>
         </Grid.RowDefinitions>
+        <!--#region Plan Selection-->
         <DockPanel>
             <TextBlock Text="Plan Selection:" FontSize="24" Margin="150,15" DockPanel.Dock="Top"/>
             <ScrollViewer VerticalScrollBarVisibility="Auto" DockPanel.Dock="Top">
                 <TreeView ItemsSource="{Binding Courses}" Width="500">
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate DataType="" ItemsSource="{Binding Plans}">
-                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" Content="{Binding Id}"/>
+                        <HierarchicalDataTemplate DataType="{x:Type model:Course}" ItemsSource="{Binding Plans}">
+                            <TextBlock Text="{Binding Id}"/>
+                            <HierarchicalDataTemplate.ItemTemplate>
+                                <HierarchicalDataTemplate DataType="{x:Type model:Plan}">
+                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" Content="{Binding Id}"/>
+                                </HierarchicalDataTemplate>
+                            </HierarchicalDataTemplate.ItemTemplate>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="{x:Type TreeViewItem}">
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
                 </TreeView>
-                <!--ListBox ItemsSource="{Binding Courses}" Width="500">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel>
-                                <TextBlock Text="{Binding Id}"/>
-                                <ListBox ItemsSource="{Binding Plans}">
-                                    <ListBox.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <UniformGrid Columns="2"/>
-                                        </ItemsPanelTemplate>
-                                    </ListBox.ItemsPanel>
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" Content="{Binding Id}"/>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox-->
             </ScrollViewer>
         </DockPanel>
-        <StackPanel Grid.Row="1">
-            <TextBlock Text="Patient Setup:" FontSize="24" Margin="150,15"/>
+        <!--#endregion-->
+        <!--#region Patient Setup-->
+        <DockPanel Grid.Row="1">
+            <TextBlock Text="Patient Setup:" FontSize="24" 
+                       Margin="150,15" DockPanel.Dock="Top"/>
             <ListBox ItemsSource="{Binding PatientSetupToggles}" 
-                 Grid.Row="1" Width="500">
+                     Width="500" DockPanel.Dock="Top">
                 <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>
                         <UniformGrid Columns="2"/>
@@ -73,7 +67,8 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-        </StackPanel>
+        </DockPanel>
+        <!--#endregion-->
         <Button Content="Next" 
                 Command="{Binding PatientSetupCompleted}"
                 Grid.Row="2" Width="100" Height="25"/>

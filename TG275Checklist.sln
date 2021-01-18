@@ -7,7 +7,9 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TG275Checklist", "TG275Chec
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TG275Checklist.Views", "TG275Checklist.Views\TG275Checklist.Views.csproj", "{1FA8F51D-AF18-4DE8-99BB-1EFE3D5B7AD4}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TG275Checklist.Runner", "TG275Checklist.Runner\TG275Checklist.Runner.fsproj", "{1871D277-BA8D-4F11-962A-256860D54C9C}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TG275Checklist.Runner", "TG275Checklist.Runner\TG275Checklist.Runner.fsproj", "{1871D277-BA8D-4F11-962A-256860D54C9C}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TG275Checklist.Model", "TG275Checklist.Models\TG275Checklist.Model.fsproj", "{52DF68B1-A180-4CAF-98C8-12294CF16CA2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{1871D277-BA8D-4F11-962A-256860D54C9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1871D277-BA8D-4F11-962A-256860D54C9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1871D277-BA8D-4F11-962A-256860D54C9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52DF68B1-A180-4CAF-98C8-12294CF16CA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52DF68B1-A180-4CAF-98C8-12294CF16CA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52DF68B1-A180-4CAF-98C8-12294CF16CA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52DF68B1-A180-4CAF-98C8-12294CF16CA2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

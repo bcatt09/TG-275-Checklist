@@ -10,8 +10,6 @@
 
 	<ItemGroup>
 		<Compile Include="MetroProgressDialogExample.fs" />
-		<Compile Include="Esapi.fs" />
-		<Compile Include="Model.fs" />
 		<Content Include="FodyWeavers.xml" />
 		<Compile Include="Program.fs" />
 	</ItemGroup>
@@ -19,19 +17,19 @@
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="4.1.0" />
 		<PackageReference Include="Elmish.WPF" Version="3.5.6" />
-		<PackageReference Include="ParallelExtensionsExtras" Version="1.2.0" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\TG275Checklist.Models\TG275Checklist.Model.fsproj" />
 	  <ProjectReference Include="..\TG275Checklist.Views\TG275Checklist.Views.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <Reference Include="VMS.TPS.Common.Model.API">
-	    <HintPath>..\VMS.TPS.Common.Model.API.dll</HintPath>
+	    <HintPath>..\..\..\VMS Libraries\VMS.TPS.Common.Model.API.dll</HintPath>
 	  </Reference>
-	  <Reference Include="VMS.TPS.Common.Model.Interface">
-	    <HintPath>..\VMS.TPS.Common.Model.Interface.dll</HintPath>
+	  <Reference Include="VMS.TPS.Common.Model.Types">
+	    <HintPath>..\..\..\VMS Libraries\VMS.TPS.Common.Model.Types.dll</HintPath>
 	  </Reference>
 	</ItemGroup>
 

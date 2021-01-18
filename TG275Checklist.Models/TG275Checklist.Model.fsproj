@@ -1,30 +1,28 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
-    <AssemblyName>elm.esapi</AssemblyName>
+    <TargetFramework>net472</TargetFramework> 
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
-    <Compile Include="Script.fs" />
+    <Compile Include="Esapi.fs" />
+    <Compile Include="Model.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="Costura.Fody" Version="4.1.0" />
+    <PackageReference Include="Elmish.WPF" Version="3.5.6" />
+    <PackageReference Include="ParallelExtensionsExtras" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
     <Reference Include="VMS.TPS.Common.Model.API">
       <HintPath>..\..\..\VMS Libraries\VMS.TPS.Common.Model.API.dll</HintPath>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.Types">
       <HintPath>..\..\..\VMS Libraries\VMS.TPS.Common.Model.Types.dll</HintPath>
     </Reference>
-    <Reference Include="WindowsBase" />
   </ItemGroup>
-
 </Project>

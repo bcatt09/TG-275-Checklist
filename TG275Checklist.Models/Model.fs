@@ -1,15 +1,33 @@
-﻿namespace TG275Checklist
+﻿namespace TG275Checklist.Model
 
 open Elmish
 open Elmish.WPF
 
 open Esapi
-open TG275Checklist.Views
 open VMS.TPS.Common.Model.API
 open type System.Windows.Visibility
 
+// Raw Course/Plan information
+type Plan =
+    {
+        Id: string
+    }
+type Course =
+    {
+        Id: string
+        Plans: Plan list
+    }
+// Arguments passed from the Eclipse plugin
+type StandaloneApplicationArgs =
+    {
+        PatientID: string
+        Courses: Course list
+        OpenedCourseID: string
+        OpenedPlanID: string
+    }
+
 module ChecklistOptions =
-    type Plan =
+    type SelectedPlan =
         {
             PlanId: string
             CourseId: string
@@ -26,13 +44,27 @@ module ChecklistOptions =
     
     type ChecklistOptions =
         {
-            Plans: Plan list
+            Plans: SelectedPlan list
             Toggles: ToggleType list
         }
     let emptyChecklistOptions = { Plans = []; Toggles = [] }
 
 module PatientSetup =
     open ChecklistOptions
+    // Courses/Plans to be used in PatientSetup Screen
+    type PlanWithOptions =
+        {
+            Id: string
+            IsChecked: bool     // Is it checked off to be used in checklists?
+            bindingid: string   // Used for subModel bindings
+        }
+    let getPlanBindingId courseId planId = courseId + "\\" + planId
+    type CourseWithOptions =
+        {
+            Id: string
+            Plans: PlanWithOptions list
+            IsExpanded: bool    // Is the course expanded (mainly used for initial model)
+        }
     // Patient setup toggles to be used in PatientSetup Screen
     type Toggle =
         {
@@ -103,40 +135,38 @@ module PatientSetup =
             };
         ]
 
-    // Courses/Plans to be used in PatientSetup Screen
-    type Plan =
-        {
-            bindingid: string   // used for subModel bindings
-            Id: string
-            IsChecked: bool       // is it checked off to be used in checklists?
-        }
-    type Course =
-        {
-            Id: string
-            Plans: Plan list
-        }
-
     // PatientSetup Model
     type Model =
         {
-            Courses: Course list
+            Courses: CourseWithOptions list
             Toggles: Toggle list
             Visibility: System.Windows.Visibility
         }
 
     // Initial model
-    let init () =
+    let init (args:StandaloneApplicationArgs) =
         {
-            Courses = []
+            Courses = args.Courses |> List.map (fun c -> 
+                { 
+                    Id = c.Id; 
+                    IsExpanded = c.Id = args.OpenedCourseID; 
+                    Plans = c.Plans |> List.map (fun p ->
+                        {
+                            Id = p.Id;
+                            IsChecked = p.Id = args.OpenedPlanID;
+                            bindingid = getPlanBindingId c.Id p.Id 
+                        })
+                })
             Toggles = toggleList
             Visibility = Visible
         }
-    let initFromCourses (courses) = { init() with Courses = courses }
+    let initFromCourses args courses = { init(args) with Courses = courses }
 
     // Internal Messages
     type Msg =
     | ToggleChanged of int * bool
     | UsePlanChanged of string * bool
+    | CourseIsExpandedChanged of string * bool
     | NextButtonClicked
 
     // Messages sent to MainWindow
@@ -167,6 +197,11 @@ module PatientSetup =
                             else p) 
                     })
             }, Cmd.none, NoMainWindowMsg 
+        | CourseIsExpandedChanged (id, isexpanded) -> 
+            { m with 
+                Courses = m.Courses
+                |> List.map (fun c -> if c.Id = id then { c with IsExpanded = isexpanded } else c)
+            }, Cmd.none, NoMainWindowMsg 
         | NextButtonClicked -> { m with Visibility = Collapsed }, Cmd.none, PatientSetupCompleted 
                                                 { 
                                                     Plans = 
@@ -178,15 +213,16 @@ module PatientSetup =
                                                 }
 
     // WPF Bindings
-    let planBindings () : Binding<(Model * Course) * Plan, Msg> list =
+    let planBindings () : Binding<(Model * CourseWithOptions) * PlanWithOptions, Msg> list =
         [
             "Id" |> Binding.oneWay (fun (_, p) -> p.Id)
-            "IsChecked" |> Binding.twoWay ((fun (_, p:Plan) -> p.IsChecked), (fun value (_, p:Plan) -> UsePlanChanged (p.bindingid, value)))
+            "IsChecked" |> Binding.twoWay ((fun (_, p:PlanWithOptions) -> p.IsChecked), (fun value (_, p:PlanWithOptions) -> UsePlanChanged (p.bindingid, value)))
         ]
-    let courseBindings () : Binding<Model * Course, Msg> list =
+    let courseBindings () : Binding<Model * CourseWithOptions, Msg> list =
         [
             "Id" |> Binding.oneWay (fun (_, c) -> c.Id)
-            "Plans" |> Binding.subModelSeq((fun (_, c) -> c.Plans), (fun (p:Plan) -> p.bindingid), planBindings)
+            "Plans" |> Binding.subModelSeq((fun (_, c) -> c.Plans), (fun (p:PlanWithOptions) -> p.bindingid), planBindings)
+            "IsExpanded" |> Binding.twoWay ((fun (_, c) -> c.IsExpanded), (fun value (_, c:CourseWithOptions) -> CourseIsExpandedChanged (c.Id, value)))
         ]
     let toggleBindings () : Binding<Model * Toggle, Msg> list =
         [
@@ -195,7 +231,7 @@ module PatientSetup =
         ]
     let bindings () : Binding<Model, Msg> list =
         [
-            "Courses" |> Binding.subModelSeq((fun m -> m.Courses), (fun (c:Course) -> c.Id), courseBindings)
+            "Courses" |> Binding.subModelSeq((fun m -> m.Courses), (fun (c:CourseWithOptions) -> c.Id), courseBindings)
             "PatientSetupToggles" |> Binding.subModelSeq((fun m -> m.Toggles), (fun (t:Toggle) -> t.Id), toggleBindings)
             "PatientSetupCompleted" |> Binding.cmd NextButtonClicked
             "PatientSetupVisibility" |> Binding.oneWay(fun m -> m.Visibility)
@@ -251,13 +287,6 @@ module Checklist =
 
 module App =
     open PatientSetup
-    // Arguments passed from the Eclipse plugin
-    type StandaloneApplicationArgs =
-        {
-            PatientID: string
-            CourseID: string
-            PlanID: string
-        }
 
     // Info displayed by the Main Window
     type SharedInfo =
@@ -272,7 +301,7 @@ module App =
 
     // Status Bar at bottom of window
     type StatusBar =
-    | None of string
+    | NoLoadingBar of string
     | Indeterminate of IndeterminateStatusBar
     | Determinate of DeterminateStatusBar
     and IndeterminateStatusBar = { Status: string }
@@ -286,7 +315,6 @@ module App =
             ChecklistListScreen: Checklist.Model
             ChecklistOptions: ChecklistOptions.ChecklistOptions
             SharedInfo: SharedInfo
-            MainWindow: MainWindow
             StatusBar: StatusBar
             Args: StandaloneApplicationArgs
         }
@@ -299,7 +327,7 @@ module App =
         | LoginFailed of exn
         // Patient Setup
         | LoadCoursesIntoPatientSetup
-        | LoadCoursesSuccess of Course list
+        | LoadCoursesSuccess of CourseWithOptions list
         | LoadCoursesFailed of exn
         | PatientSetupMsg of PatientSetup.Msg
         | LoadChecklistScreen
@@ -309,11 +337,11 @@ module App =
         | Debugton
 
     // Initial empty model
-    let readyStatus = None "Ready"
-    let init (window:MainWindow) (args:StandaloneApplicationArgs) =
+    let readyStatus = NoLoadingBar "Ready"
+    let init (args:StandaloneApplicationArgs) =
         { 
             CurrentScreen = PatientSetupScreen
-            PatientSetupScreen = PatientSetup.init()
+            PatientSetupScreen = PatientSetup.init(args)
             SharedInfo =
                 {
                     PatientName = ""
@@ -321,13 +349,12 @@ module App =
                 }
             ChecklistListScreen = Checklist.init()
             ChecklistOptions = ChecklistOptions.emptyChecklistOptions
-            MainWindow = window
             StatusBar = readyStatus
             Args = args
         }, Cmd.ofMsg Login
     
     // Initial Eclipse login function
-    let login (window:MainWindow, args:StandaloneApplicationArgs) =
+    let login (args:StandaloneApplicationArgs) =
         async {
             // Log in to Eclipse and get initial patient info
             try
@@ -338,40 +365,73 @@ module App =
                             PatientName = pat.Name
                             CurrentUser = app.CurrentUser.Name
                         })
-
-                // Dispose of the Esapi service and Application to prevent crashing
-                window.Closed.AddHandler(fun _ _ -> esapi.Dispose())
                 
                 return LoginSuccess patientInfo
             with ex -> return LoginFailed ex
         }
 
-    let loadCoursesIntoPatientSetup () =
+    // Load courses/plans from Eclipse
+    let loadCoursesIntoPatientSetup (model:Model) =
         async {
             let! courses = esapi.Run(fun (pat : Patient) ->
                 pat.Courses 
-                |> Seq.map (fun c -> { Id = c.Id; Plans = c.PlanSetups |> Seq.map(fun p -> { Id = p.Id; IsChecked = false; bindingid = c.Id + p.Id }) |> Seq.toList })
+                |> Seq.map (fun course -> 
+                    // If the course was already loaded, match its states, otherwise keep it collapsed
+                    let existingCourse = model.PatientSetupScreen.Courses |> List.filter (fun c -> c.Id = course.Id) |> List.tryExactlyOne
+                    { 
+                        Id = course.Id; 
+                        IsExpanded = 
+                            match existingCourse with
+                            | Some c -> c.IsExpanded
+                            | None -> false
+                        Plans = course.PlanSetups 
+                                |> Seq.map(fun plan -> 
+                                    match existingCourse with
+                                    | None -> 
+                                        {
+                                            Id = plan.Id
+                                            IsChecked = false
+                                            bindingid = getPlanBindingId course.Id plan.Id
+                                        }
+                                    | Some existingCourse ->
+                                        // If the plan was already loaded, match it's states, otherwise keep it unchecked
+                                        let existingPlan = existingCourse.Plans |> List.filter (fun p -> p.Id = plan.Id) |> List.tryExactlyOne
+                                        { 
+                                            Id = plan.Id; 
+                                            IsChecked = 
+                                                match existingPlan with
+                                                | Some p -> p.IsChecked
+                                                | None -> false
+                                            bindingid = getPlanBindingId course.Id plan.Id 
+                                        }) 
+                                |> Seq.toList })
                 |> Seq.toList
             )
             return LoadCoursesSuccess courses
         }
-        
 
     // Handle any messages
     let update msg m =
         match msg with
         // Eclipse login
-        | Login -> { m with StatusBar = Indeterminate { Status = "Logging in to Eclipse" } }, Cmd.OfAsync.either login (m.MainWindow, m.Args) id LoginFailed
+        | Login -> { m with StatusBar = Indeterminate { Status = "Logging in to Eclipse" } }, Cmd.OfAsync.either login (m.Args) id LoginFailed
         | LoginSuccess patientInfo -> { m with SharedInfo = patientInfo; StatusBar = readyStatus }, Cmd.ofMsg LoadCoursesIntoPatientSetup
         | LoginFailed x -> 
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Login to Eclipse") |> ignore
-            { m with StatusBar = None "Failed to log in to Eclipse" }, Cmd.none
+            { m with StatusBar = NoLoadingBar "Failed to log in to Eclipse" }, Cmd.none
         // Initial load of patient plans
-        | LoadCoursesIntoPatientSetup -> { m with StatusBar = Indeterminate { Status = "Loading Plans" } }, Cmd.OfAsync.either loadCoursesIntoPatientSetup () id LoadCoursesFailed
-        | LoadCoursesSuccess courses -> { m with PatientSetupScreen = initFromCourses(courses); StatusBar = None "Ready" }, Cmd.none
+        | LoadCoursesIntoPatientSetup -> { m with StatusBar = Indeterminate { Status = "Loading Plans" } }, Cmd.OfAsync.either loadCoursesIntoPatientSetup (m) id LoadCoursesFailed
+        | LoadCoursesSuccess eclipseCourses -> // Merge any newly loaded plans from Eclipse with existing plans which were loaded via the plugin ScriptContext to create final Courses to be displayed
+            { m with 
+                PatientSetupScreen = 
+                    { m.PatientSetupScreen with 
+                        Courses = eclipseCourses
+                    }; 
+                StatusBar = NoLoadingBar "Ready" 
+            }, Cmd.none
         | LoadCoursesFailed x ->
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Load Course from Eclipse") |> ignore
-            { m with StatusBar = None "Failed to load courses from Eclipse" }, Cmd.none
+            { m with StatusBar = NoLoadingBar "Failed to load courses from Eclipse" }, Cmd.none
         // Patient Setup Screen
         | PatientSetupMsg patSetupMsg -> 
             let (patSetupModel, patSetupCmd, patSetupExtraMsg) = PatientSetup.update patSetupMsg m.PatientSetupScreen
@@ -393,8 +453,8 @@ module App =
             // MainWindow Info
             "PatientName" |> Binding.oneWay (fun m -> m.SharedInfo.PatientName)
             "CurrentUser" |> Binding.oneWay (fun m -> m.SharedInfo.CurrentUser)
-            "StatusBarStatus" |> Binding.oneWay (fun m -> match m.StatusBar with | None status -> status | Indeterminate bar -> bar.Status | Determinate bar -> bar.Status)
-            "StatusBarVisibility" |> Binding.oneWay (fun m -> match m.StatusBar with | None _ -> Collapsed | _ -> Visible)
+            "StatusBarStatus" |> Binding.oneWay (fun m -> match m.StatusBar with | NoLoadingBar status -> status | Indeterminate bar -> bar.Status | Determinate bar -> bar.Status)
+            "StatusBarVisibility" |> Binding.oneWay (fun m -> match m.StatusBar with | NoLoadingBar _ -> Collapsed | _ -> Visible)
             "StatusBarIsIndeterminate" |> Binding.oneWay (fun m -> match m.StatusBar with | Determinate _ -> false | _ -> true)
             "CurrentScreen" |> Binding.oneWay(fun m -> m.CurrentScreen.ToString())
 

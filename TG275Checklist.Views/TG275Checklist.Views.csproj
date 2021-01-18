@@ -8,7 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Costura.Fody" Version="4.1.0" />
     <PackageReference Include="MahApps.Metro" Version="2.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TG275Checklist.Models\TG275Checklist.Model.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
