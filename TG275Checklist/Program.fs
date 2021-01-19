@@ -17,10 +17,10 @@ module Program =
         // The script has possibly been built against a different version of Eclipse Scripting API that is not available in your system.
         // Another reason might be that the script has no reference to Eclipse Scripting API at all.
         let referenceAPI = new VMS.TPS.Common.Model.API.ESAPIActionPackAttribute()
-
+        
         let courses = 
-            args.[1].Split([|"\\\\"|], StringSplitOptions.None) 
-            |> Array.toList     // Individual Course/Plan strings
+            args.[2].Split([|"\\\\"|], StringSplitOptions.None) 
+                |> Array.toList     // Individual Course/Plan strings
             |> List.groupBy(fun fullId -> fullId.Split('\\').[0]) 
             |> List.map(fun (course, plans) -> (course, plans |> List.map(fun plan -> plan.Split('\\').[1]))) // Grouped by Course ID
             |> List.map (fun (course, plans) -> 
@@ -28,7 +28,7 @@ module Program =
                     Id = course; 
                     Plans = plans 
                             |> List.map(fun plan -> { Id = plan }) 
-                })
+                })  // Final Course list
 
         let standaloneArgs = 
             let tempArgs = if args.Length = 0 then [|"4703528"; "1 SACRUM\\SACRUM_2"|] else args  // Use a known patient if args are blank (launched outside of Eclipse)

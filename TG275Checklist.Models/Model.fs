@@ -375,6 +375,7 @@ module App =
         async {
             let! courses = esapi.Run(fun (pat : Patient) ->
                 pat.Courses 
+                |> Seq.sortByDescending(fun course -> match Option.ofNullable course.StartDateTime with | Some time -> time | None -> new System.DateTime())
                 |> Seq.map (fun course -> 
                     // If the course was already loaded, match its states, otherwise keep it collapsed
                     let existingCourse = model.PatientSetupScreen.Courses |> List.filter (fun c -> c.Id = course.Id) |> List.tryExactlyOne
@@ -385,6 +386,7 @@ module App =
                             | Some c -> c.IsExpanded
                             | None -> false
                         Plans = course.PlanSetups 
+                                |> Seq.sortByDescending(fun plan -> match Option.ofNullable plan.CreationDateTime with | Some time -> time | None -> new System.DateTime())
                                 |> Seq.map(fun plan -> 
                                     match existingCourse with
                                     | None -> 
