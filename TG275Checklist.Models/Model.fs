@@ -7,7 +7,7 @@ open Esapi
 open VMS.TPS.Common.Model.API
 open type System.Windows.Visibility
 
-// Raw Course/Plan information
+// Raw Course/Plan information (Needs to be outside of a module for XAMLs)
 type Plan =
     {
         Id: string
@@ -17,7 +17,8 @@ type Course =
         Id: string
         Plans: Plan list
     }
-// Arguments passed from the Eclipse plugin
+
+// Arguments passed from the Eclipse plugin (Doesn't have to be outside of a module, I just don't have a better place for it)
 type StandaloneApplicationArgs =
     {
         PatientID: string
@@ -26,6 +27,7 @@ type StandaloneApplicationArgs =
         OpenedPlanID: string
     }
 
+// Checklist options which are held in the PatientSetup Screen
 module ChecklistOptions =
     type SelectedPlan =
         {
@@ -42,12 +44,12 @@ module ChecklistOptions =
         | SRS
         | SBRT
     
-    type ChecklistOptions =
+    type Model =
         {
             Plans: SelectedPlan list
             Toggles: ToggleType list
         }
-    let emptyChecklistOptions = { Plans = []; Toggles = [] }
+    let init () = { Plans = []; Toggles = [] }
 
 module PatientSetup =
     open ChecklistOptions
@@ -172,7 +174,7 @@ module PatientSetup =
     // Messages sent to MainWindow
     type MainWindowMsg =
     | NoMainWindowMsg
-    | PatientSetupCompleted of ChecklistOptions
+    | PatientSetupCompleted of ChecklistOptions.Model
 
     // Handle Messages
     let update msg (m:Model) =
@@ -295,10 +297,6 @@ module App =
             CurrentUser: string
         }
 
-    type CurrentScreen =
-    | PatientSetupScreen
-    | ChecklistScreen
-
     // Status Bar at bottom of window
     type StatusBar =
     | NoLoadingBar of string
@@ -310,10 +308,9 @@ module App =
     // Main Model
     type Model =
         { 
-            CurrentScreen: CurrentScreen
             PatientSetupScreen: PatientSetup.Model
             ChecklistListScreen: Checklist.Model
-            ChecklistOptions: ChecklistOptions.ChecklistOptions
+            ChecklistOptions: ChecklistOptions.Model
             SharedInfo: SharedInfo
             StatusBar: StatusBar
             Args: StandaloneApplicationArgs
@@ -336,11 +333,12 @@ module App =
 
         | Debugton
 
-    // Initial empty model
+    // Default status bar
     let readyStatus = NoLoadingBar "Ready"
+
+    // Initial empty model
     let init (args:StandaloneApplicationArgs) =
         { 
-            CurrentScreen = PatientSetupScreen
             PatientSetupScreen = PatientSetup.init(args)
             SharedInfo =
                 {
@@ -348,7 +346,7 @@ module App =
                     CurrentUser = ""
                 }
             ChecklistListScreen = Checklist.init()
-            ChecklistOptions = ChecklistOptions.emptyChecklistOptions
+            ChecklistOptions = ChecklistOptions.init()
             StatusBar = readyStatus
             Args = args
         }, Cmd.ofMsg Login
@@ -440,7 +438,7 @@ module App =
             match patSetupExtraMsg with
             | NoMainWindowMsg -> { m with PatientSetupScreen = patSetupModel }, Cmd.none
             | PatientSetupCompleted options -> { m with PatientSetupScreen = patSetupModel; ChecklistOptions = options }, Cmd.ofMsg LoadChecklistScreen
-        | LoadChecklistScreen -> { m with CurrentScreen = ChecklistScreen; ChecklistListScreen = { m.ChecklistListScreen with Visibility = Visible } }, Cmd.ofMsg Debugton
+        | LoadChecklistScreen -> { m with ChecklistListScreen = { m.ChecklistListScreen with Visibility = Visible } }, Cmd.ofMsg Debugton
         // Checklist Screen
         | ChecklistMsg _ -> m, Cmd.none
 
@@ -458,7 +456,6 @@ module App =
             "StatusBarStatus" |> Binding.oneWay (fun m -> match m.StatusBar with | NoLoadingBar status -> status | Indeterminate bar -> bar.Status | Determinate bar -> bar.Status)
             "StatusBarVisibility" |> Binding.oneWay (fun m -> match m.StatusBar with | NoLoadingBar _ -> Collapsed | _ -> Visible)
             "StatusBarIsIndeterminate" |> Binding.oneWay (fun m -> match m.StatusBar with | Determinate _ -> false | _ -> true)
-            "CurrentScreen" |> Binding.oneWay(fun m -> m.CurrentScreen.ToString())
 
             // Patient Setup Screen
             "PatientSetup" |> Binding.subModel((fun m -> m.PatientSetupScreen), snd, PatientSetupMsg, PatientSetup.bindings)

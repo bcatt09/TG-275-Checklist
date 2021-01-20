@@ -9,8 +9,11 @@ open TG275Checklist.Model.App
 
 module Program =
 
-
     [<EntryPoint; STAThread>]
+    // args
+    // 0 - Patient ID
+    // 1 - Currently active plan ("Course/Plan")
+    // 2 - List of all plans opened in Eclipse ("Course/Plan//Course/Plan//...")
     let main args =
         // This is required to load the ESAPI API assembly, otherwise an UnauthorizedScriptingAPIAccessException is thrown:
         // Application was not able to load the required Eclipse Scripting API version.
@@ -18,6 +21,7 @@ module Program =
         // Another reason might be that the script has no reference to Eclipse Scripting API at all.
         let referenceAPI = new VMS.TPS.Common.Model.API.ESAPIActionPackAttribute()
         
+        // Build course list
         let courses = 
             args.[2].Split([|"\\\\"|], StringSplitOptions.None) 
                 |> Array.toList     // Individual Course/Plan strings
@@ -30,6 +34,7 @@ module Program =
                             |> List.map(fun plan -> { Id = plan }) 
                 })  // Final Course list
 
+        // Arguments sent from Eclipse to the standalone application in friendly form to be passed to the model
         let standaloneArgs = 
             let tempArgs = if args.Length = 0 then [|"4703528"; "1 SACRUM\\SACRUM_2"|] else args  // Use a known patient if args are blank (launched outside of Eclipse)
             {
@@ -40,14 +45,12 @@ module Program =
             }
 
         let window = new MainWindow()
-        
-        // Dispose of the Esapi service and Application to prevent crashing
+        // Dispose of the Esapi service and Application on window close to prevent crashing
         window.Closed.AddHandler(fun _ _ -> Esapi.esapi.Dispose())
 
+        // Run the Elmish window
         Program.mkProgramWpf (fun () -> init standaloneArgs) update bindings
         |> Program.withConsoleTrace
         |> Program.runWindowWithConfig
             { ElmConfig.Default with LogConsole = true; Measure = true }
-            (window) |> ignore
-
-        1
+            (window)
