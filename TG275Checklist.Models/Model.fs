@@ -28,21 +28,42 @@ type StandaloneApplicationArgs =
     }
 
 // Checklist options which are held in the PatientSetup Screen
-module ChecklistOptions =
+module PatientSetupOptions =
     type SelectedPlan =
         {
             PlanId: string
             CourseId: string
         }
     type ToggleType =
-        | PreviousRT
-        | Pacemaker
-        | Registration
-        | FourD
-        | DIBH
-        | IMRT
-        | SRS
-        | SBRT
+        | PreviousRT of bool
+        | Pacemaker of bool
+        | Registration of bool
+        | FourD of bool
+        | DIBH of bool
+        | IMRT of bool
+        | SRS of bool
+        | SBRT of bool
+        member this.IsChecked = 
+            match this with
+            | PreviousRT value -> value
+            | Pacemaker value -> value
+            | Registration value -> value
+            | FourD value -> value
+            | DIBH value -> value
+            | IMRT value -> value
+            | SRS value -> value
+            | SBRT value -> value
+        member this.Text =
+            match this with
+            | PreviousRT _ -> "Previous RT"
+            | Pacemaker _ -> "Pacemaker/ICD"
+            | Registration _ -> "Registration"
+            | FourD _ -> "4D Simulation"
+            | DIBH _ -> "DIBH"
+            | IMRT _ -> "IMRT/VMAT"
+            | SRS _ -> "SRS"
+            | SBRT _ -> "SBRT"
+    let toggleList = [ PreviousRT false; Pacemaker false; Registration false; FourD false; DIBH false; IMRT false; SRS false; SBRT false ]
     
     type Model =
         {
@@ -51,8 +72,8 @@ module ChecklistOptions =
         }
     let init () = { Plans = []; Toggles = [] }
 
-module PatientSetup =
-    open ChecklistOptions
+module PatientSetupScreen =
+    open PatientSetupOptions
     // Courses/Plans to be used in PatientSetup Screen
     type PlanWithOptions =
         {
@@ -67,81 +88,12 @@ module PatientSetup =
             Plans: PlanWithOptions list
             IsExpanded: bool    // Is the course expanded (mainly used for initial model)
         }
-    // Patient setup toggles to be used in PatientSetup Screen
-    type Toggle =
-        {
-            Type: ToggleType
-            Text: string
-            IsChecked: bool
-            Id: int
-        }
-    let private getText toggleType =
-        match toggleType with
-        | PreviousRT _ -> "Previous RT"
-        | Pacemaker _ -> "Pacemaker/ICD"
-        | Registration _ -> "Registration"
-        | FourD _ -> "4D Simulation"
-        | DIBH _ -> "DIBH"
-        | IMRT _ -> "IMRT/VMAT"
-        | SRS _ -> "SRS"
-        | SBRT _ -> "SBRT"
-    let toggleList = 
-        [
-            {
-                Type = PreviousRT;
-                Text = getText PreviousRT;
-                IsChecked = false; 
-                Id = 1
-            };
-            {
-                Type = Pacemaker;
-                Text = getText Pacemaker;
-                IsChecked = false; 
-                Id = 2
-            };
-            {
-                Type = Registration;
-                Text = getText Registration;
-                IsChecked = false; 
-                Id = 3
-            };
-            {
-                Type = FourD;
-                Text = getText FourD;
-                IsChecked = false; 
-                Id = 4
-            };
-            {
-                Type = DIBH;
-                Text = getText DIBH;
-                IsChecked = false; 
-                Id = 5
-            };
-            {
-                Type = IMRT;
-                Text = getText IMRT;
-                IsChecked = false; 
-                Id = 6
-            };
-            {
-                Type = SRS;
-                Text = getText SRS;
-                IsChecked = false; 
-                Id = 7
-            };
-            {
-                Type = SBRT;
-                Text = getText SBRT;
-                IsChecked = false; 
-                Id = 8
-            };
-        ]
 
     // PatientSetup Model
     type Model =
         {
             Courses: CourseWithOptions list
-            Toggles: Toggle list
+            Toggles: ToggleType list
             Visibility: System.Windows.Visibility
         }
 
@@ -166,7 +118,7 @@ module PatientSetup =
 
     // Internal Messages
     type Msg =
-    | ToggleChanged of int * bool
+    | ToggleChanged of ToggleType * bool
     | UsePlanChanged of string * bool
     | CourseIsExpandedChanged of string * bool
     | NextButtonClicked
@@ -174,7 +126,7 @@ module PatientSetup =
     // Messages sent to MainWindow
     type MainWindowMsg =
     | NoMainWindowMsg
-    | PatientSetupCompleted of ChecklistOptions.Model
+    | PatientSetupCompleted of PatientSetupOptions.Model
 
     // Handle Messages
     let update msg (m:Model) =
@@ -183,9 +135,18 @@ module PatientSetup =
             { m with 
                 Toggles = m.Toggles 
                 |> List.map(fun toggle -> 
-                    if toggle.Id = id 
-                    then { toggle with IsChecked = ischecked } 
-                    else toggle) 
+                    if id = toggle
+                    then 
+                        match toggle with
+                        | PreviousRT t -> PreviousRT ischecked
+                        | Pacemaker t -> Pacemaker ischecked
+                        | Registration t -> Registration ischecked
+                        | FourD t -> FourD ischecked
+                        | DIBH t -> DIBH ischecked
+                        | IMRT t -> IMRT ischecked
+                        | SRS t -> SRS ischecked
+                        | SBRT t -> SBRT ischecked
+                    else toggle)
             }, Cmd.none, NoMainWindowMsg
         | UsePlanChanged (id, ischecked) -> 
             { m with 
@@ -204,15 +165,18 @@ module PatientSetup =
                 Courses = m.Courses
                 |> List.map (fun c -> if c.Id = id then { c with IsExpanded = isexpanded } else c)
             }, Cmd.none, NoMainWindowMsg 
-        | NextButtonClicked -> { m with Visibility = Collapsed }, Cmd.none, PatientSetupCompleted 
-                                                { 
-                                                    Plans = 
-                                                        [ for c in m.Courses do
-                                                            for p in c.Plans do
-                                                                if p.IsChecked then 
-                                                                    yield { PlanId = p.Id; CourseId = c.Id } ]
-                                                    Toggles = m.Toggles |> List.filter (fun t -> t.IsChecked) |> List.map (fun t -> t.Type)            
-                                                }
+        | NextButtonClicked -> 
+            { m with Visibility = Collapsed }, 
+            Cmd.none, 
+            PatientSetupCompleted 
+                { 
+                    Plans = 
+                        [ for c in m.Courses do
+                            for p in c.Plans do
+                                if p.IsChecked then 
+                                    yield { PlanId = p.Id; CourseId = c.Id } ]
+                    Toggles = m.Toggles |> List.filter (fun t -> t.IsChecked)          
+                }
 
     // WPF Bindings
     let planBindings () : Binding<(Model * CourseWithOptions) * PlanWithOptions, Msg> list =
@@ -226,20 +190,20 @@ module PatientSetup =
             "Plans" |> Binding.subModelSeq((fun (_, c) -> c.Plans), (fun (p:PlanWithOptions) -> p.bindingid), planBindings)
             "IsExpanded" |> Binding.twoWay ((fun (_, c) -> c.IsExpanded), (fun value (_, c:CourseWithOptions) -> CourseIsExpandedChanged (c.Id, value)))
         ]
-    let toggleBindings () : Binding<Model * Toggle, Msg> list =
+    let toggleBindings () : Binding<Model * ToggleType, Msg> list =
         [
             "Text" |> Binding.oneWay (fun (_, f) -> f.Text)
-            "IsChecked" |> Binding.twoWay ((fun (_, f:Toggle) -> f.IsChecked), (fun value (_, f:Toggle) -> ToggleChanged (f.Id, value)))
+            "IsChecked" |> Binding.twoWay ((fun (_, f:ToggleType) -> f.IsChecked), (fun value (_, f:ToggleType) -> ToggleChanged (f, value)))
         ]
     let bindings () : Binding<Model, Msg> list =
         [
             "Courses" |> Binding.subModelSeq((fun m -> m.Courses), (fun (c:CourseWithOptions) -> c.Id), courseBindings)
-            "PatientSetupToggles" |> Binding.subModelSeq((fun m -> m.Toggles), (fun (t:Toggle) -> t.Id), toggleBindings)
+            "PatientSetupToggles" |> Binding.subModelSeq((fun m -> m.Toggles), (fun (t:ToggleType) -> t), toggleBindings)
             "PatientSetupCompleted" |> Binding.cmd NextButtonClicked
-            "PatientSetupVisibility" |> Binding.oneWay(fun m -> m.Visibility)
+            "PatientSetupScreenVisibility" |> Binding.oneWay(fun m -> m.Visibility)
         ]
 
-module Checklist =
+module ChecklistScreen =
     type ChecklistCategory =
         | Prescription
         | Simulation
@@ -254,41 +218,85 @@ module Checklist =
         | Deviations
     type ChecklistItem =
         {
-            Description: string
+            Text: string
             EsapiText: string option
             //OtherThingsToDisplay1: 'a option
             //OtherThingsToDisplay2: 'a option
         }
+    type Checklist =
+        {
+            Category: ChecklistCategory
+            Checklist: ChecklistItem list
+        }
+    let exampleChecklist = { Category = Prescription; Checklist = [ { Text = "LOOK AT THE PLAN"; EsapiText = None } ] }
+    let getChecklistBindingId category = category.ToString()
     type PlanDetails =
         {
             CourseId: string
             PlanId: string
+            // Dose
+            // Approvals
+        }
+    type SelectedPlan =
+        {
+            PlanDetails: PlanDetails
+            Checklists: Checklist list
         }
     type Model =
         {
-            PlanDetails: PlanDetails
-            Category: ChecklistCategory
-            Checklist: ChecklistItem list
+            Plans: SelectedPlan list
             Visibility: System.Windows.Visibility
         }
     let init () =
         {
-            PlanDetails = { CourseId = ""; PlanId = "" }
-            Category = Prescription
-            Checklist = []
+            Plans = []
             Visibility = Collapsed
         }
+    let initChecklist () = 
+        {
+            Category = Prescription;
+            Checklist = [{Text="LOOK AT THE PLAN";EsapiText=Some "DONE AND DONE"}]
+        }
+        
+    //let init () =
+    //    {
+    //        PlanDetails = { CourseId = ""; PlanId = "" }
+    //        Category = Prescription
+    //        Checklist = [{Text="LOOK AT THE PLAN";EsapiText=None}]
+    //        Visibility = Collapsed
+    //    }
 
     type Msg =
     | Message
 
+
+    let checklistItemBindings () : Binding<((Model * SelectedPlan) * Checklist) * ChecklistItem, Msg> list =
+        [
+            "Text" |> Binding.oneWay (fun (_, item) -> item.Text)
+            "EsapiText" |> Binding.oneWay (fun (_, item) -> item.EsapiText)
+        ]
+
+    let checklistBindings () : Binding<(Model * SelectedPlan) * Checklist, Msg> list =
+        [
+            "ChecklistItems" |> Binding.subModelSeq((fun (_, checklist) -> checklist.Checklist), (fun (item:ChecklistItem) -> item.Text), checklistItemBindings)
+            "Category" |> Binding.oneWay(fun (_, checklist) -> checklist.Category.ToString())
+        ]
+
+    let planBindings () : Binding<Model * SelectedPlan, Msg> list =
+        [
+            "CourseId" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.CourseId)
+            "PlanId" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.PlanId)
+            "Checklists" |> Binding.subModelSeq((fun (_, plan) -> plan.Checklists), (fun (c:Checklist) -> getChecklistBindingId c.Category), checklistBindings)
+        ]
+
     let bindings () : Binding<Model, Msg> list =
         [
-            "ChecklistVisibility" |> Binding.oneWay(fun m -> m.Visibility)
+            "Plans" |> Binding.subModelSeq((fun m -> m.Plans), (fun (p:SelectedPlan) -> PatientSetupScreen.getPlanBindingId p.PlanDetails.CourseId p.PlanDetails.PlanId), planBindings)
+            "ChecklistScreenVisibility" |> Binding.oneWay(fun m -> m.Visibility)
         ]
 
 module App =
-    open PatientSetup
+    open PatientSetupScreen
 
     // Info displayed by the Main Window
     type SharedInfo =
@@ -308,9 +316,9 @@ module App =
     // Main Model
     type Model =
         { 
-            PatientSetupScreen: PatientSetup.Model
-            ChecklistListScreen: Checklist.Model
-            ChecklistOptions: ChecklistOptions.Model
+            PatientSetupScreen: PatientSetupScreen.Model
+            ChecklistListScreen: ChecklistScreen.Model
+            PatientSetupOptions: PatientSetupOptions.Model
             SharedInfo: SharedInfo
             StatusBar: StatusBar
             Args: StandaloneApplicationArgs
@@ -326,9 +334,10 @@ module App =
         | LoadCoursesIntoPatientSetup
         | LoadCoursesSuccess of CourseWithOptions list
         | LoadCoursesFailed of exn
-        | PatientSetupMsg of PatientSetup.Msg
-        | LoadChecklistScreen
-        | ChecklistMsg of Checklist.Msg
+        | PatientSetupMsg of PatientSetupScreen.Msg
+        | LoadChecklistScreen of PatientSetupOptions.Model
+        // Checklist
+        | ChecklistMsg of ChecklistScreen.Msg
 
 
         | Debugton
@@ -337,22 +346,22 @@ module App =
     let readyStatus = NoLoadingBar "Ready"
 
     // Initial empty model
-    let init (args:StandaloneApplicationArgs) =
+    let init args =
         { 
-            PatientSetupScreen = PatientSetup.init(args)
+            PatientSetupScreen = PatientSetupScreen.init(args)
             SharedInfo =
                 {
                     PatientName = ""
                     CurrentUser = ""
                 }
-            ChecklistListScreen = Checklist.init()
-            ChecklistOptions = ChecklistOptions.init()
+            ChecklistListScreen = ChecklistScreen.init()
+            PatientSetupOptions = PatientSetupOptions.init()
             StatusBar = readyStatus
             Args = args
         }, Cmd.ofMsg Login
     
     // Initial Eclipse login function
-    let login (args:StandaloneApplicationArgs) =
+    let login args =
         async {
             // Log in to Eclipse and get initial patient info
             try
@@ -369,7 +378,7 @@ module App =
         }
 
     // Load courses/plans from Eclipse
-    let loadCoursesIntoPatientSetup (model:Model) =
+    let loadCoursesIntoPatientSetup model =
         async {
             let! courses = esapi.Run(fun (pat : Patient) ->
                 pat.Courses 
@@ -434,17 +443,32 @@ module App =
             { m with StatusBar = NoLoadingBar "Failed to load courses from Eclipse" }, Cmd.none
         // Patient Setup Screen
         | PatientSetupMsg patSetupMsg -> 
-            let (patSetupModel, patSetupCmd, patSetupExtraMsg) = PatientSetup.update patSetupMsg m.PatientSetupScreen
+            let (patSetupModel, patSetupCmd, patSetupExtraMsg) = PatientSetupScreen.update patSetupMsg m.PatientSetupScreen
             match patSetupExtraMsg with
             | NoMainWindowMsg -> { m with PatientSetupScreen = patSetupModel }, Cmd.none
-            | PatientSetupCompleted options -> { m with PatientSetupScreen = patSetupModel; ChecklistOptions = options }, Cmd.ofMsg LoadChecklistScreen
-        | LoadChecklistScreen -> { m with ChecklistListScreen = { m.ChecklistListScreen with Visibility = Visible } }, Cmd.ofMsg Debugton
+            | PatientSetupCompleted options -> { m with PatientSetupScreen = patSetupModel; PatientSetupOptions = options }, Cmd.ofMsg (LoadChecklistScreen options)
+        | LoadChecklistScreen options -> 
+            { m with ChecklistListScreen = 
+                { m.ChecklistListScreen with 
+                    Visibility = Visible;
+                    Plans = options.Plans 
+                    |> List.map(fun plan ->
+                        {
+                            PlanDetails =
+                                {
+                                    PlanId = plan.PlanId;
+                                    CourseId = plan.CourseId
+                                }
+                            Checklists = [ChecklistScreen.initChecklist()]
+                        }
+                    )
+                } }, Cmd.ofMsg Debugton
         // Checklist Screen
         | ChecklistMsg _ -> m, Cmd.none
 
         | Debugton -> System.Windows.MessageBox.Show(sprintf "Plans:\n%s\n\nOptions:\n%s"
-                                    (m.ChecklistOptions.Plans |> List.map(fun p -> $"{p.PlanId} ({p.CourseId})") |> String.concat "\n")
-                                    (m.ChecklistOptions.Toggles |> List.map (fun t -> t.ToString()) |> String.concat "\n")
+                                    (m.PatientSetupOptions.Plans |> List.map(fun p -> $"{p.PlanId} ({p.CourseId})") |> String.concat "\n")
+                                    (m.PatientSetupOptions.Toggles |> List.map (fun t -> t.ToString()) |> String.concat "\n")
                                    )|> ignore; m, Cmd.none
 
     // WPF bindings
@@ -458,10 +482,10 @@ module App =
             "StatusBarIsIndeterminate" |> Binding.oneWay (fun m -> match m.StatusBar with | Determinate _ -> false | _ -> true)
 
             // Patient Setup Screen
-            "PatientSetup" |> Binding.subModel((fun m -> m.PatientSetupScreen), snd, PatientSetupMsg, PatientSetup.bindings)
+            "PatientSetupScreen" |> Binding.subModel((fun m -> m.PatientSetupScreen), snd, PatientSetupMsg, PatientSetupScreen.bindings)
             
             // Checklist Screen
-            "Checklist" |> Binding.subModel((fun m -> m.ChecklistListScreen), snd, ChecklistMsg, Checklist.bindings)
+            "ChecklistScreen" |> Binding.subModel((fun m -> m.ChecklistListScreen), snd, ChecklistMsg, ChecklistScreen.bindings)
 
             "Debugton" |> Binding.cmd Debugton
         ]
