@@ -17,6 +17,27 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Cyan.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.FlatButton.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="ChecklistCategoryText" TargetType="{x:Type TextBlock}">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="TextAlignment" Value="Center"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="Width" Value="150"/>
+                <Setter Property="Height" Value="25"/>
+                <Setter Property="Padding" Value="1"/>
+                <Setter Property="Margin" Value="0,3"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TabItem}}" Value="True">
+                        <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
+                        <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TabItem}}" Value="False">
+                        <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
+                        <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Gray8}"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -30,10 +51,10 @@
         <TabControl.ContentTemplate>
             <DataTemplate>
                 <!-- Checklist Categories -->
-                <TabControl ItemsSource="{Binding Checklists}" TabStripPlacement="Left" mah:TabControlHelper.UnderlineSelectedBrush="White">
+                <TabControl ItemsSource="{Binding Checklists}" TabStripPlacement="Left">
                     <TabControl.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Category}"/>
+                            <TextBlock Text="{Binding Category}" Style="{StaticResource ChecklistCategoryText}"/>
                         </DataTemplate>
                     </TabControl.ItemTemplate>
                     <TabControl.ContentTemplate>
