@@ -38,40 +38,57 @@ module Checklists =
             //OtherThingsToDisplay2: 'a option
         }
 
-    type EsapiPlanInfo =
+    type PlanDetails =
         {
             CourseId: string
             PlanId: string
+            // Dose
+            // Approvals
         }
 
-    type EsapiFunction = PlanSetup -> EsapiResults
-    type EsapiFunction2 = EsapiPlanInfo -> Async<EsapiResults> option
+    type PureEsapiFunction = PlanSetup -> EsapiResults
+    type EsapiChecklistFunction = PlanDetails -> Async<EsapiResults>
 
-    let runEsapiFunction (esapiFunc: EsapiFunction) planInfo =
+    let runEsapiFunction planDetails (esapiFunc: PureEsapiFunction option) =
         async {
-            let! result = esapi.Run(fun (pat: Patient) ->
-                let plan = 
-                    pat.Courses
-                    |> Seq.map(fun c -> c.PlanSetups |> Seq.cast<PlanSetup>)
-                    |> Seq.concat
-                    |> Seq.filter(fun p -> p.Id = planInfo.PlanId && p.Course.Id = planInfo.CourseId)
-                    |> Seq.exactlyOne
-                esapiFunc plan
-            )
-
-            return Some result
+            match esapiFunc with
+            | Some func ->
+                let! result = esapi.Run(fun (pat: Patient) ->
+                    let plan = 
+                        pat.Courses
+                        |> Seq.map(fun c -> c.PlanSetups |> Seq.cast<PlanSetup>)
+                        |> Seq.concat
+                        |> Seq.filter(fun p -> p.Id = planDetails.PlanId && p.Course.Id = planDetails.CourseId)
+                        |> Seq.exactlyOne
+                    func plan
+                )
+                return Some result
+            | None -> return None
         }
     type ChecklistItem =
         {
             Text: string
             EsapiResults: EsapiResults option
-            Function: EsapiFunction2
+            Function: PureEsapiFunction option
+            AsyncToken: Async<EsapiResults option>
         }
     type CategoryChecklist =
         {
             Category: ChecklistCategory
             Checklist: ChecklistItem list
         }
+
+    let createChecklistItemWithAsyncToken planDetails listItem =
+        { listItem with 
+            AsyncToken = 
+                listItem.Function |> runEsapiFunction planDetails }
+
+    let createCategoryChecklistWithAsyncTokens planDetails checklist = 
+        { checklist with 
+            Checklist = checklist.Checklist |> List.map(fun x -> x |> createChecklistItemWithAsyncToken planDetails)}
+
+    let createFullChecklistWithAsyncTokens planDetails checklist =
+        checklist |> List.map (fun x -> x |> createCategoryChecklistWithAsyncTokens planDetails)
 
         //member this.CalcCategoryChecklist planInfo =
         //    this.Checklist |>
@@ -85,6 +102,14 @@ module Checklists =
             Category = category
             Checklist = list
         }
+
+    let blankChecklistItem =
+        {
+            Text = ""
+            EsapiResults = None
+            Function = None
+            AsyncToken = async { return None }
+        }
         
     let blankFunction (plan: PlanSetup) : Async<EsapiResults> option =
         None
@@ -94,7 +119,7 @@ module Checklists =
         { Text = plan.TotalDose.ToString() }
 
     let prescriptionChecklist =
-        createCategoryChecklist Prescription (List.map(fun (text, fxn) -> { Text = text; EsapiResults = None; Function = match fxn with | None -> (fun _ -> None) | Some fn -> Some (runEsapiFunction fn);  }) <|
+        createCategoryChecklist Prescription (List.map(fun (text, fxn) -> { blankChecklistItem with Text = text; Function = fxn }) <| // match fxn with | None -> None | Some fn -> Some(runEsapiFunction fn)  }) <|
             [
                 "Prescription (with respect to standard of care, institutional clinical guidelines or clinical trial is applicable)", Some testFunction
                 "Final plan and prescription approval by physician", None
@@ -111,7 +136,7 @@ module Checklists =
             ])
 
     let simulationChecklist =
-        createCategoryChecklist Simulation (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist Simulation (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Physician directive for imaging technique, setup and immobilization (this may include: contrast, scanning orientation, immobilization device, etc.)"
                 "Description of target location on physician planning directive (e.g. RUL Lung, H&N, L1‐L4)"
@@ -124,7 +149,7 @@ module Checklists =
             ])
 
     let contouringChecklist =
-        createCategoryChecklist Contouring (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist Contouring (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Target(s)* ‐ e.g. discernible errors, missing slices, mislabeling, gross anatomical deviations."
                 "Organs‐at‐risk (OAR's)"
@@ -136,7 +161,7 @@ module Checklists =
             ])
 
     let standardOperatingProceduresChecklist =
-        createCategoryChecklist StandardProcedure (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist StandardProcedure (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Course and plan ID"
                 "Treatment technique (e.g. 3D, IMRT, VMAT, SBRT, etc.)"
@@ -158,7 +183,7 @@ module Checklists =
             ])
 
     let planQualityChecklist =
-        createCategoryChecklist PlanQuality (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist PlanQuality (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Target coverage and target planning objectives"
                 "Sparing of OARs and OAR planning objectives"
@@ -175,7 +200,7 @@ module Checklists =
             ])
        
     let doseVerificationChecklist =
-        createCategoryChecklist Verification (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist Verification (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Second calculation check and/or QA performed"
                 "Verification plan for patient specific QA measurement"
@@ -183,7 +208,7 @@ module Checklists =
             ])
         
     let isocenterChecklist =
-        createCategoryChecklist Isocenter (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist Isocenter (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Isocenter: placement and consistency between patient marking and setup instructions"
                 "Additional shifts"
@@ -191,7 +216,7 @@ module Checklists =
             ])
         
     let imageGuidanceChecklist =
-        createCategoryChecklist ImageGuidanceSetup (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist ImageGuidanceSetup (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Matching instructions (e.g. 2D/2D, 3D, etc.) and MD directive for IGRT"
                 "Matching structures"
@@ -206,14 +231,14 @@ module Checklists =
             ])
         
     let schedulingChecklist =
-        createCategoryChecklist Scheduling (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist Scheduling (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Plan is scheduled for treatment"
                 "Scheduling of safety‐critical tasks (e.g. weekly chart checks, IMRT QA, etc.)"
             ])
         
     let replanChecklist =
-        createCategoryChecklist Replan (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist Replan (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Full plan check if new plan generated"
                 "Old/new CT registration"
@@ -225,7 +250,7 @@ module Checklists =
             ])
         
     let deviationChecklist =
-        createCategoryChecklist Deviations (List.map(fun text -> { Text = text; EsapiResults = None; Function = None }) <|
+        createCategoryChecklist Deviations (List.map(fun text -> { blankChecklistItem with Text = text }) <|
             [
                 "Any unexpected deviations entered into incident learning system"
             ])
@@ -234,13 +259,13 @@ module Checklists =
                         planQualityChecklist; doseVerificationChecklist; isocenterChecklist; imageGuidanceChecklist; 
                         schedulingChecklist; replanChecklist; deviationChecklist]
 
-    let calcFullChecklist (checklist:CategoryChecklist list) planInfo =
-        checklist
-        |> List.map(fun x -> x.Checklist)
-        |> List.concat
-        |> List.map(fun x ->
-                x.Text,
-                match x.Function with
-                | None -> async{return None}
-                | Some fxn -> runEsapiFunction fxn planInfo
-        )
+    //let calcFullChecklist (checklist:CategoryChecklist list) planInfo =
+    //    checklist
+    //    |> List.map(fun x -> x.Checklist)
+    //    |> List.concat
+    //    |> List.map(fun x ->
+    //            x.Text,
+    //            match x.Function with
+    //            | None -> async{return None}
+    //            | Some fxn -> runEsapiFunction fxn planInfo
+    //    )

@@ -2,7 +2,9 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework> 
 
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile> 
+
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

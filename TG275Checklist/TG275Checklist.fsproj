@@ -6,6 +6,7 @@
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<OutputType>WinExe</OutputType>
 		<AssemblyName>elm</AssemblyName>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>

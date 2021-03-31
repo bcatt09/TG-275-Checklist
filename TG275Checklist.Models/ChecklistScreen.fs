@@ -2,22 +2,17 @@
 
 open Elmish
 open Elmish.WPF
+
+open Esapi
+open VMS.TPS.Common.Model.API
 open type System.Windows.Visibility
 
 module ChecklistScreen = 
 
     open Checklists
 
-    let exampleChecklist = { Category = Prescription; Checklist = [ { Text = "LOOK AT THE PLAN"; EsapiResults = None; Function = None } ] }
     let getChecklistBindingId category = category.ToString()
 
-    type PlanDetails =
-        {
-            CourseId: string
-            PlanId: string
-            // Dose
-            // Approvals
-        }
     type SelectedPlan =
         {
             PlanDetails: PlanDetails
@@ -38,25 +33,40 @@ module ChecklistScreen =
     type Msg =
     | Message
     | LoadChecklists
-    | LoadChecklistsSuccess of CategoryChecklist list
+    | LoadChecklistsSuccess of SelectedPlan list
     | LoadChecklistsFailure of exn
+
+    let getPlan (pat:Patient) planDetails =
+        pat.Courses
+        |> Seq.map(fun c -> c.PlanSetups |> Seq.cast<PlanSetup>)
+        |> Seq.concat
+        |> Seq.filter(fun p -> p.Id = planDetails.PlanId && p.Course.Id = planDetails.CourseId)
+        |> Seq.exactlyOne
+
+    let populateEsapiResults (plans: SelectedPlan list) =
+        async{
+            let newPlansWithEsapiResults =
+                plans
+                |> List.map (fun p ->
+                    { p with 
+                        Checklists = 
+                            p.Checklists
+                            |> List.map (fun x -> 
+                                let newChecklist = x.Checklist |> List.map(fun y -> { y with EsapiResults = y.AsyncToken |> Async.RunSynchronously})
+                                { x with Checklist = newChecklist })})
+
+            return LoadChecklistsSuccess newPlansWithEsapiResults
+            //return LoadChecklistsSuccess plans
+        }
 
     let update msg m =
         match msg with
         | LoadChecklists -> 
-            { m with 
-                Plans = 
-                    m.Plans
-                    |> List.map(fun p ->
-                        {
-                            PlanDetails = p.PlanDetails;asrt
-                            Checklists = 
-                                p.Checklists
-                                |> List.map(fun x ->
-                                    x
-                                )
-                        })
-            }, Cmd.none
+            m, Cmd.OfAsync.either populateEsapiResults m.Plans id LoadChecklistsFailure
+        | LoadChecklistsSuccess newPlans -> { m with Plans = newPlans }, Cmd.none
+        | LoadChecklistsFailure x -> 
+            System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Populate Plan Results from Eclipse") |> ignore
+            m, Cmd.none
         | _ -> m, Cmd.none
 
     let checklistItemBindings () : Binding<((Model * SelectedPlan) * CategoryChecklist) * ChecklistItem, Msg> list =

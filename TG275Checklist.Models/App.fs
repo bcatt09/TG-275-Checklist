@@ -74,20 +74,18 @@ module App =
         }, Cmd.ofMsg Login
     
     // Initial Eclipse login function
-    let login args =
+    let loginAsync args =
         async {
             // Log in to Eclipse and get initial patient info
-            try
-                do! esapi.LogInAsync()
-                do! esapi.OpenPatientAsync(args.PatientID)
-                let! patientInfo = esapi.Run(fun (pat : Patient, app : Application) ->
-                        {
-                            PatientName = pat.Name
-                            CurrentUser = app.CurrentUser.Name
-                        })
+            do! esapi.LogInAsync()
+            do! esapi.OpenPatientAsync(args.PatientID)
+            let! patientInfo = esapi.Run(fun (pat : Patient, app : Application) ->
+                    {
+                        PatientName = pat.Name
+                        CurrentUser = app.CurrentUser.Name
+                    })
                 
-                return LoginSuccess patientInfo
-            with ex -> return LoginFailed ex
+            return LoginSuccess patientInfo
         }
 
     // Load courses/plans from Eclipse
@@ -136,13 +134,13 @@ module App =
     let update msg m =
         match msg with
         // Eclipse login
-        | Login -> { m with StatusBar = Indeterminate { Status = "Logging in to Eclipse" } }, Cmd.OfAsync.either login (m.Args) id LoginFailed
+        | Login -> { m with StatusBar = Indeterminate { Status = "Logging in to Eclipse" } }, Cmd.OfAsync.either loginAsync m.Args id LoginFailed
         | LoginSuccess patientInfo -> { m with SharedInfo = patientInfo; StatusBar = readyStatus }, Cmd.ofMsg LoadCoursesIntoPatientSetup
         | LoginFailed x -> 
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Login to Eclipse") |> ignore
             { m with StatusBar = NoLoadingBar "Failed to log in to Eclipse" }, Cmd.none
         // Initial load of patient plans
-        | LoadCoursesIntoPatientSetup -> { m with StatusBar = Indeterminate { Status = "Loading Plans" } }, Cmd.OfAsync.either loadCoursesIntoPatientSetup (m) id LoadCoursesFailed
+        | LoadCoursesIntoPatientSetup -> { m with StatusBar = Indeterminate { Status = "Loading Plans" } }, Cmd.OfAsync.either loadCoursesIntoPatientSetup m id LoadCoursesFailed
         | LoadCoursesSuccess eclipseCourses -> // Merge any newly loaded plans from Eclipse with existing plans which were loaded via the plugin ScriptContext to create final Courses to be displayed
             { m with 
                 PatientSetupScreen = 
@@ -161,7 +159,8 @@ module App =
             | NoMainWindowMsg -> { m with PatientSetupScreen = patSetupModel }, Cmd.none
             | PatientSetupCompleted options -> { m with PatientSetupScreen = patSetupModel; PatientSetupOptions = options }, Cmd.ofMsg (LoadChecklistScreen options)
         | LoadChecklistScreen options -> 
-            { m with ChecklistListScreen = 
+            { m with 
+                ChecklistListScreen = 
                 { m.ChecklistListScreen with 
                     Visibility = Visible;
                     Plans = options.Plans 
@@ -172,14 +171,14 @@ module App =
                                     PlanId = plan.PlanId;
                                     CourseId = plan.CourseId
                                 }
-                            Checklists = Checklists.fullChecklist
+                            Checklists = Checklists.fullChecklist |> Checklists.createFullChecklistWithAsyncTokens {PlanId = plan.PlanId; CourseId = plan.CourseId}
                         }
                     )
-                } }, Cmd.ofMsg (ChecklistMsg ChecklistScreen.Msg.LoadChecklists)
+                } }, Cmd.ofMsg (ChecklistMsg ChecklistScreen.Msg.LoadChecklists)//Cmd.OfAsync.either (ChecklistMsg ChecklistScreen.populateEsapiResults m.ChecklistListScreen.Plans) id ChecklistScreen.Msg.LoadChecklistsFailure //Cmd.ofMsg (ChecklistMsg ChecklistScreen.Msg.LoadChecklists)
         // Checklist Screen
         | ChecklistMsg checklistMsg -> 
             let (checklistModel, checklistCmd) = ChecklistScreen.update checklistMsg m.ChecklistListScreen
-            { m with ChecklistListScreen = checklistModel}, Cmd.none
+            { m with ChecklistListScreen = checklistModel}, (Cmd.map ChecklistMsg checklistCmd)
 
         | Debugton -> System.Windows.MessageBox.Show(sprintf "Plans:\n%s\n\nOptions:\n%s"
                                     (m.PatientSetupOptions.Plans |> List.map(fun p -> $"{p.PlanId} ({p.CourseId})") |> String.concat "\n")

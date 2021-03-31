@@ -3,6 +3,7 @@
 // Checklist options which are held in the PatientSetup Screen
 module PatientSetupOptions = 
 
+    // TODO: get rid of this or Checklists.PlanDetails this is used in App.fs LoadChecklistScreen Msg
     type SelectedPlan =
         {
             PlanId: string
