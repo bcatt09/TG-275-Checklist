@@ -245,6 +245,7 @@ module Model =
 
     let populateEsapiResults (plans: ChecklistSelectedPlan list) =
         async{
+            do! Async.SwitchToThreadPool()
             let newPlansWithEsapiResults =
                 plans
                 |> List.map (fun p ->
@@ -284,6 +285,7 @@ module Model =
         // Patient Setup Screen
         | LoadChecklistScreen newModel -> 
             { m with 
+                StatusBar = Indeterminate { Status = "Loading Eclipse Data" }
                 ChecklistScreenVisibility = Visible;
                 ChecklistScreenPlans = newModel.PatientSetupOptionsPlans 
                 |> List.map(fun plan ->
@@ -351,10 +353,14 @@ module Model =
         // Checklist Screen
         | LoadChecklists -> 
             m, Cmd.OfAsync.either populateEsapiResults m.ChecklistScreenPlans id LoadChecklistsFailure
-        | LoadChecklistsSuccess newPlans -> { m with ChecklistScreenPlans = newPlans }, Cmd.none
+        | LoadChecklistsSuccess newPlans -> 
+            { m with 
+                StatusBar = NoLoadingBar "Ready" 
+                ChecklistScreenPlans = newPlans 
+            }, Cmd.none
         | LoadChecklistsFailure x -> 
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Populate Plan Results from Eclipse") |> ignore
-            m, Cmd.none
+            { m with StatusBar = NoLoadingBar "Ready" }, Cmd.none
 
         | Debugton -> System.Windows.MessageBox.Show(sprintf "Plans:\n%s\n\nOptions:\n%s"
                                     (m.PatientSetupOptionsPlans |> List.map(fun p -> $"{p.PlanId} ({p.CourseId})") |> String.concat "\n")
