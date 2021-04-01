@@ -37,13 +37,12 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
-        <views:PatientSetup DataContext="{Binding PatientSetupScreen}"
+        <views:PatientSetup DataContext="{Binding}"
                             Visibility="{Binding PatientSetupScreenVisibility}"/>
-        <views:Checklist DataContext="{Binding ChecklistScreen}"
+        <views:Checklist DataContext="{Binding}"
                          Visibility="{Binding ChecklistScreenVisibility, FallbackValue=Collapsed}"/>
 
         <StatusBar Grid.Row="2">
-            <StatusBarItem Content="{Binding PatientSetupScreenVisibility}"/>
             <StatusBarItem Content="{Binding StatusBarStatus}"/>
             <ProgressBar Width="100" Visibility="{Binding StatusBarVisibility}" IsIndeterminate="{Binding StatusBarIsIndeterminate}"/>
             <StatusBarItem HorizontalAlignment="Right">

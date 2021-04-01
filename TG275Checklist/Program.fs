@@ -5,7 +5,6 @@ open Elmish.WPF
 open System
 open TG275Checklist.Views
 open TG275Checklist.Model
-open TG275Checklist.Model.App
 
 module Program =
 
@@ -49,7 +48,7 @@ module Program =
         window.Closed.AddHandler(fun _ _ -> Esapi.esapi.Dispose())
 
         // Run the Elmish window
-        Program.mkProgramWpf (fun () -> init standaloneArgs) update bindings
+        Program.mkProgramWpf (fun () -> Model.init standaloneArgs) Model.update Model.bindings
         |> Program.withConsoleTrace
         |> Program.runWindowWithConfig
             { ElmConfig.Default with LogConsole = true; Measure = true }

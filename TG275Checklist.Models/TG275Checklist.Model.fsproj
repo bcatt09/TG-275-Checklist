@@ -10,10 +10,10 @@
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
     <Compile Include="Esapi.fs" />
-    <Compile Include="Model.fs" />
     <Compile Include="PatientSetupOptions.fs" />
-    <Compile Include="PatientSetupScreen.fs" />
     <Compile Include="Checklists.fs" />
+    <Compile Include="Model.fs" />
+    <Compile Include="PatientSetupScreen.fs" />
     <Compile Include="ChecklistScreen.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
