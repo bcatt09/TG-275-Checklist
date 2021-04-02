@@ -9,13 +9,17 @@
 
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
-    <Compile Include="Esapi.fs" />
-    <Compile Include="PatientSetupOptions.fs" />
-    <Compile Include="Checklists.fs" />
+    <Compile Include="CommonTypes.fs" />
+    <Compile Include="EsapiService.fs" />
+    <Compile Include="PatientSetupTypes.fs" />
+    <Compile Include="ChecklistTypes.fs" />
+    <Compile Include="ChecklistFunctions.fs" />
+    <Compile Include="EsapiCalls.fs" />
+    <Compile Include="BaseChecklist.fs" />
     <Compile Include="Model.fs" />
-    <Compile Include="PatientSetupScreen.fs" />
-    <Compile Include="ChecklistScreen.fs" />
-    <Compile Include="App.fs" />
+    <Compile Include="UpdateFunctions.fs" />
+    <Compile Include="Update.fs" />
+    <Compile Include="Bindings.fs" />
   </ItemGroup>
 
   <ItemGroup>

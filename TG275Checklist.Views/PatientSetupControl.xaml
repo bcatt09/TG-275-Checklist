@@ -32,10 +32,10 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto" DockPanel.Dock="Top">
                 <TreeView ItemsSource="{Binding Courses}" Width="500">
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type model:Course}" ItemsSource="{Binding Plans}">
+                        <HierarchicalDataTemplate DataType="{x:Type model:CourseInfo}" ItemsSource="{Binding Plans}">
                             <TextBlock Text="{Binding Id}"/>
                             <HierarchicalDataTemplate.ItemTemplate>
-                                <HierarchicalDataTemplate DataType="{x:Type model:Plan}">
+                                <HierarchicalDataTemplate DataType="{x:Type model:PlanInfo}">
                                     <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" Content="{Binding Id}"/>
                                 </HierarchicalDataTemplate>
                             </HierarchicalDataTemplate.ItemTemplate>
