@@ -24,7 +24,7 @@ module Update =
         // Eclipse login
         | EclipseLogin ->
             { m with 
-                StatusBar = Indeterminate { Status = "Logging in to Eclipse" } 
+                StatusBar = indeterminateStatus "Logging in to Eclipse"
             }, Cmd.OfAsync.either loginAsync m.Args id EclipseLoginFailed
         | EclipseLoginSuccess patientInfo -> 
             { m with 
@@ -44,13 +44,13 @@ module Update =
         // Initial load of patient plans IDs from Eclipse
         | LoadCoursesIntoPatientSetup -> 
             { m with 
-                StatusBar = Indeterminate { Status = "Loading Plans" } 
+                StatusBar = indeterminateStatus "Loading Plans"
             }, Cmd.OfAsync.either loadCoursesIntoPatientSetup m id LoadCoursesFailed
         // Merge any newly loaded plans from Eclipse with existing plans which were loaded via the plugin ScriptContext to create final Courses to be displayed
         | LoadCoursesSuccess eclipseCourses ->
             { m with 
                 PatientSetupScreenCourses = eclipseCourses
-                StatusBar = NoLoadingBar "Ready" 
+                StatusBar = readyStatus 
             }, Cmd.none
         | LoadCoursesFailed x ->
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Load Course from Eclipse") |> ignore
@@ -105,41 +105,51 @@ module Update =
         // Display Checklist Screen
         | DisplayChecklistScreen -> 
             { m with 
-                StatusBar = Indeterminate { Status = "Loading Eclipse Data" }
+                StatusBar = indeterminateStatus "Loading Eclipse Data"
                 ChecklistScreenVisibility = Visible
                 PatientSetupScreenVisibility = Collapsed
                 PatientSetupScreenToggles = m.PatientSetupScreenToggles |> List.filter (fun t -> t.IsChecked)         
                 ChecklistScreenPlans = 
-                [ for c in m.PatientSetupScreenCourses do
-                    for p in c.Plans do
-                        if p.IsChecked then 
-                            yield { PlanId = p.Id; CourseId = c.Id } ]
-                |> List.map(fun plan ->
-                    {
-                        PlanDetails =
-                            {
-                                PlanId = plan.PlanId;
-                                CourseId = plan.CourseId
-                            }
-                        Checklists = fullChecklist |> createFullChecklistWithAsyncTokens {PlanId = plan.PlanId; CourseId = plan.CourseId}
-                    }
+                    [ for c in m.PatientSetupScreenCourses do
+                        for p in c.Plans do
+                            if p.IsChecked then 
+                                yield { PlanId = p.Id; CourseId = c.Id } ]
+                    |> List.map(fun plan ->
+                        {
+                            PlanDetails =
+                                {
+                                    PlanId = plan.PlanId;
+                                    CourseId = plan.CourseId
+                                }
+                            Checklists = fullChecklist |> createFullChecklistWithAsyncTokens {PlanId = plan.PlanId; CourseId = plan.CourseId}
+                        }
                 )
-            }, Cmd.ofMsg LoadChecklists
-
-        // Populate all data from Eclipse
-        | LoadChecklists -> 
-            m, Cmd.OfAsync.either populateEsapiResultsAsync m.ChecklistScreenPlans id LoadChecklistsFailure
-        | LoadChecklistsSuccess newPlans -> 
-            { m with 
-                StatusBar = NoLoadingBar "Ready" 
-                ChecklistScreenPlans = newPlans 
-            }, Cmd.none
-        | LoadChecklistsFailure x -> 
+            }, Cmd.ofMsg PrepToLoadNextChecklist
+        | PrepToLoadNextChecklist ->
+            { m with ChecklistScreenPlans = markNextUnloadedChecklist m }, Cmd.ofMsg UpdateLoadingMessage
+        | UpdateLoadingMessage ->
+            match getLoadingChecklist m with
+            | None -> 
+                { m with 
+                    StatusBar = readyStatus
+                }, Cmd.none
+            | Some loadingList -> 
+                { m with 
+                    StatusBar = indeterminateStatus $"Loading {loadingList.Category.ToReadableString()}"
+                } , Cmd.ofMsg LoadNextChecklist
+        | LoadNextChecklist ->
+            m, Cmd.OfAsync.either loadNextEsapiResultsAsync m id LoadChecklistFailure
+        | LoadChecklistSuccess newFullChecklists ->
+            { m with
+                ChecklistScreenPlans = newFullChecklists
+            }, Cmd.ofMsg PrepToLoadNextChecklist
+        | LoadChecklistFailure x -> 
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Populate Plan Results from Eclipse") |> ignore
-            { m with StatusBar = NoLoadingBar "Ready" }, Cmd.none
+            m, Cmd.ofMsg PrepToLoadNextChecklist
+        | AllChecklistsLoaded ->
+            { m with StatusBar = readyStatus }, Cmd.none
+            
 
-        | Debugton -> System.Windows.MessageBox.Show(sprintf "Plans:\n%s\n\nOptions:\n%s"
-                                    (m.ChecklistScreenPlans |> List.map(fun p -> $"{p.PlanDetails.PlanId} ({p.PlanDetails.CourseId})") |> String.concat "\n")
-                                    (m.PatientSetupScreenToggles |> List.map (fun t -> t.ToString()) |> String.concat "\n")
-                                    )|> ignore; m, Cmd.none
+        | Debugton -> 
+            markAllUnloaded m, Cmd.ofMsg PrepToLoadNextChecklist
 

@@ -25,6 +25,8 @@ module ChecklistFunctions =
                                 Text = text
                                 Function = fxn 
                             })
+            Loaded = false
+            Loading = false
         }
 
     let tempCreateCategoryChecklistSansFunction category list =
@@ -36,5 +38,7 @@ module ChecklistFunctions =
                                 Text = text
                                 Function = None 
                             })
+            Loaded = false
+            Loading = false
         }
             

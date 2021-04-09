@@ -48,5 +48,6 @@ module CommonTypes =
     and IndeterminateStatusBar = { Status: string }
     and DeterminateStatusBar = { Status: string; min: int; max: int }
 
-    // Default status bar
+    // Status bar helpers
     let readyStatus = NoLoadingBar "Ready"
+    let indeterminateStatus status = Indeterminate { Status = status }

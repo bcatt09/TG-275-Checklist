@@ -51,6 +51,8 @@ module ChecklistTypes =
         {
             Category: ChecklistCategory
             Checklist: ChecklistItem list
+            Loaded: bool
+            Loading: bool
         }
     
     // Full checklist for a single plan

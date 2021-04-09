@@ -43,8 +43,8 @@
                          Visibility="{Binding ChecklistScreenVisibility, FallbackValue=Collapsed}"/>
 
         <StatusBar Grid.Row="2">
+            <ProgressBar Width="100" Visibility="{Binding StatusBarVisibility}" IsIndeterminate="{Binding StatusBarIsIndeterminate}" Margin="5,0"/>
             <StatusBarItem Content="{Binding StatusBarStatus}"/>
-            <ProgressBar Width="100" Visibility="{Binding StatusBarVisibility}" IsIndeterminate="{Binding StatusBarIsIndeterminate}"/>
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
                     <Button Content="Refresh" Command="{Binding Debugton}" Background="Transparent" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" FontSize="12" Padding="3"/>

@@ -12,14 +12,19 @@ module Model =
     type Model =
         { 
             // Main Window
+
             SharedInfo: MainWindowInfo
             StatusBar: StatusBar
             Args: StandaloneApplicationArgs
+            
             // Patient Setup Screen
+            
             PatientSetupScreenCourses: PatientSetupCourse list
             PatientSetupScreenToggles: PatientSetupToggleType list
             PatientSetupScreenVisibility: System.Windows.Visibility
+            
             // Checklist Screen
+            
             ChecklistScreenPlans: FullChecklist list
             ChecklistScreenVisibility: System.Windows.Visibility
         }
@@ -46,15 +51,28 @@ module Model =
         
         | DisplayChecklistScreen
 
-        | LoadChecklists
-        | LoadChecklistsSuccess of FullChecklist list
-        | LoadChecklistsFailure of exn
+        //| LoadFullChecklist
+        // TODO: Just use the passed Model for all these?
+        | PrepToLoadNextChecklist
+        | UpdateLoadingMessage
+        | LoadNextChecklist
+        | LoadChecklistSuccess of FullChecklist list
+        | LoadChecklistFailure of exn
+        | AllChecklistsLoaded
 
 
         | Debugton
     
     let init args =
         { 
+            SharedInfo =
+                {
+                    PatientName = ""
+                    CurrentUser = ""
+                }
+            StatusBar = readyStatus
+            Args = args
+
             PatientSetupScreenCourses = args.Courses |> List.map (fun c -> 
                 { 
                     Id = c.Id; 
@@ -68,13 +86,17 @@ module Model =
                 })
             PatientSetupScreenToggles = initToggleList
             PatientSetupScreenVisibility = Visible
-            SharedInfo =
-                {
-                    PatientName = ""
-                    CurrentUser = ""
-                }
+
             ChecklistScreenPlans = []
             ChecklistScreenVisibility = Collapsed
-            StatusBar = readyStatus
-            Args = args
         }, Cmd.ofMsg EclipseLogin
+
+    let debugPrintChecklist (model: Model) =
+        model.ChecklistScreenPlans
+        |> List.map (fun plan -> 
+            plan.Checklists
+            |> List.map (fun catChecklist -> $"{catChecklist.Category}\nLoaded - {catChecklist.Loaded}\nLoading - {catChecklist.Loading}")
+            |> String.concat "\n"
+            |> (+) $"{plan.PlanDetails.PlanId}\n"
+        )
+        |> String.concat "\n"

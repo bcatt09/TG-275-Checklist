@@ -15,7 +15,7 @@ module UpdateFunctions =
             // Log in to Eclipse and get initial patient info
             do! esapi.LogInAsync()
             do! esapi.OpenPatientAsync(args.PatientID)
-            let! patientInfo = esapi.Run(fun (pat : Patient, app : Application) ->
+            let! patientInfo = esapi.Run(fun (pat: Patient, app: Application) ->
                     {
                         PatientName = pat.Name
                         CurrentUser = app.CurrentUser.Name
@@ -66,20 +66,66 @@ module UpdateFunctions =
             return LoadCoursesSuccess courses
         }
 
-    // Populate ESAPI results in checklist
-    let populateEsapiResultsAsync (plans: FullChecklist list) =
+    // Returns the list of FullChecklists, but with the first instance an an unLoaded CategoryChecklist marked with Loading = true
+    let markNextUnloadedChecklist (model: Model) =
+        let plans = model.ChecklistScreenPlans
+        // Find which FullChecklist has an unloaded CategoryChecklist first
+        match plans |> List.tryFindIndex(fun x -> x.Checklists |> List.filter(fun y -> not y.Loaded) |> List.length > 0) with
+        | Some i -> 
+            // Then find the first index of an unloaded CategoryChecklist
+            match plans.[i].Checklists |> List.tryFindIndex(fun x -> not x.Loaded) with
+            | Some k -> 
+                // Take at the first index of an unloaded CategoryChecklist, and mark it as Loading
+                let newMarkedFullChecklist = plans.[i].Checklists |> List.mapi (fun j x -> if j = k then { x with Loading = true } else x)
+                // And return the list of FullChecklists where one of them now has a CategoryChecklist marked as Loading
+                plans |> List.mapi (fun j x -> if j = i then { x with Checklists = newMarkedFullChecklist } else x)
+            | None -> plans
+        | None -> plans
+
+    // Finds the next CategoryChecklist marked as Loading as populates the data from Eclipse
+    let loadNextEsapiResultsAsync (model: Model) =
         async{
             do! Async.SwitchToThreadPool()
-            let newPlansWithEsapiResults =
-                plans
-                |> List.map (fun p ->
-                    { p with 
-                        Checklists = 
-                            p.Checklists
-                            |> List.map (fun x -> 
-                                let newChecklist = x.Checklist |> List.map(fun y -> { y with EsapiResults = y.AsyncToken |> Async.RunSynchronously })
-                                { x with Checklist = newChecklist })})
 
-            return LoadChecklistsSuccess newPlansWithEsapiResults
+            let loadCategoryChecklist (checklist: FullChecklist) =
+                let newChecklist = 
+                    checklist.Checklists
+                    |> List.map (fun x -> 
+                        if x.Loading
+                        then 
+                            { x with 
+                                Loading = false
+                                Loaded = true
+                                Checklist = x.Checklist |> List.map(fun y -> { y with EsapiResults = y.AsyncToken |> Async.RunSynchronously 
+                            }) }
+                        else x)
+                { checklist with Checklists = newChecklist }
+
+            return LoadChecklistSuccess (model.ChecklistScreenPlans |> List.map (fun p -> loadCategoryChecklist p))
         }
 
+    // Mark all categories as not Loaded to refresh
+    let markAllUnloaded (model: Model) =
+        let newPlans =
+            model.ChecklistScreenPlans
+            |> List.map (fun x -> 
+                { x with 
+                    Checklists =
+                        x.Checklists |> List.map (fun y -> { y with Loaded = false })
+                })
+        { model with ChecklistScreenPlans = newPlans }
+
+    let getLoadingChecklist (model: Model) =
+        model.ChecklistScreenPlans
+        |> List.map (fun p -> p.Checklists)
+        |> List.concat
+        |> List.filter (fun cl -> not cl.Loaded)
+        |> List.tryHead
+
+
+
+
+
+
+
+        ////////////////// Stuck on Loading Prescription with no animation

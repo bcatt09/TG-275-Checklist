@@ -34,10 +34,10 @@ module EsapiService =
         member this.Dispose() = RunAsync(fun () -> app.Value.Dispose()) |> Async.Start; scheduler.Dispose()
 
         // Run Overloads
-        member this.Run (f : Application -> 'a) = RunAsync (fun () -> f(app.Value))
-        member this.Run (f : Patient -> 'a) = RunAsync (fun () -> f(patient.Value))
-        member this.Run (f : Application * Patient -> 'a) = RunAsync (fun () -> f(app.Value, patient.Value))
-        member this.Run (f : Patient * Application -> 'a) = RunAsync (fun () -> f(patient.Value, app.Value))
+        member this.Run (f: Application -> 'a) = RunAsync (fun () -> f(app.Value))
+        member this.Run (f: Patient -> 'a) = RunAsync (fun () -> f(patient.Value))
+        member this.Run (f: Application * Patient -> 'a) = RunAsync (fun () -> f(app.Value, patient.Value))
+        member this.Run (f: Patient * Application -> 'a) = RunAsync (fun () -> f(patient.Value, app.Value))
 
     // The service instance that will be used through the application
     let esapi = new EsapiAsyncService()
