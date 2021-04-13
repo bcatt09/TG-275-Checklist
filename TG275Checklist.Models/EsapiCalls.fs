@@ -9,6 +9,16 @@ module EsapiCalls =
 
     let tab = "     "
 
+    let tagString (tag: string * string) text =
+        $"{fst tag}{text}{snd tag}"
+
+    let pass = "<Pass>", "</Pass>"
+    let fail = "<Fail>", "</Fail>"
+    let warn = "<Warn>", "</Warn>"
+
+    let stringOutput text =
+        { Text = text }
+
     type laterality =
     | Right
     | Left
@@ -35,7 +45,7 @@ module EsapiCalls =
             | Some approval -> $"{approval.ApprovalStatus} by {approval.UserDisplayName} ({approval.UserId}) at {approval.ApprovalDateTime}"
             | None -> "Plan has not been Approved/Reviewed"
 
-        { Text = $"Prescription:\n{tab}{rxText}\nPlan:\n{tab}{planText}" }
+        stringOutput $"Prescription:\n{tab}{rxText}\nPlan:\n{tab}{planText}"
 
     let getPrescriptionVsPlanDose (plan: PlanSetup) =
         let rx = plan.RTPrescription
@@ -49,7 +59,7 @@ module EsapiCalls =
 
         let planText = $"{tab}{plan.TargetVolumeID}:\n{tab}{tab}{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
 
-        { Text = $"Prescription:\n{rxText}\nPlan:\n{planText}" }
+        stringOutput $"Prescription:\n{rxText}\nPlan:\n{planText}"
 
     let getPrescriptionVsPlanEnergy (plan: PlanSetup) =
         let rx = plan.RTPrescription
@@ -65,7 +75,7 @@ module EsapiCalls =
             |> Seq.distinct
             |> String.concat $"\n{tab}"
 
-        { Text = $"Prescription:\n{tab}{rxText}\nPlan:\n{tab}{planText}" }
+        stringOutput $"Prescription:\n{tab}{rxText}\nPlan:\n{tab}{planText}"
 
     let getPrescriptionVsPlanModality (plan: PlanSetup) =
         let rx = plan.RTPrescription
@@ -85,9 +95,26 @@ module EsapiCalls =
             |> Seq.distinct
             |> String.concat $"\n{tab}"
 
-        { Text = $"Prescription:\n{tab}{rxText}\nPlan:\n{tab}{planText}" }
+        stringOutput $"Prescription:\n{tab}{rxText}\nPlan:\n{tab}{planText}"
+
+      ///////////////////////////////////////////////////////////
+     ///////////////////// Prescription ////////////////////////
+    ///////////////////////////////////////////////////////////
+
+    let getPatientOrientations (plan: PlanSetup) =
+        let tx = plan.TreatmentOrientation
+        let sim = plan.StructureSet.Image.ImagingOrientation
+
+        let tag = 
+            if tx = sim
+            then pass
+            else fail
+
+        stringOutput $"Treatment: \n{tab}{tagString tag tx}\nImaging: \n{tab}{tagString tag sim}"
 
     let testFunction (plan: PlanSetup) =
         System.Threading.Thread.Sleep(5000)
-        { Text = plan.TotalDose.ToString() }
+        let badExample = "BAD"
+        let goodExample = "Good"
+        stringOutput $"{plan.TotalDose} {tagString fail badExample} dose/{tagString pass goodExample} dose"
 

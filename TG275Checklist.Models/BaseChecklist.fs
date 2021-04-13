@@ -8,7 +8,7 @@ module BaseChecklist =
 
     let prescriptionChecklist =
         [
-            "Prescription (with respect to standard of care, institutional clinical guidelines or clinical trial is applicable)", Some testFunction
+            "Prescription (with respect to standard of care, institutional clinical guidelines or clinical trial is applicable)", None
             "Final plan and prescription approval by physician", Some getPrescriptionVsPlanApprovals
             "Site and laterality (incl. medical chart to confirm laterality)", None
             "Prescription vs consult note (e.g. physician report in EMR on plans for treatment)", None
@@ -30,7 +30,7 @@ module BaseChecklist =
             "Image quality and usability: CT Scan Artifacts, Scan sup/inf Range Includes Enough Data, Scan FOV encompasses all required information, Use of Contrast", None
             "Motion management: (a) MD directive, (b) breath‐hold parameters, (c) gating parameters, (d) 4D‐CT parameters and data set", None
             "Registration/Fusion of image sets (CT, PET, MRI, etc.)", None
-            "Patient Orientation ‐ CT information matches patient setup", None
+            "Patient Orientation ‐ CT information matches patient setup", Some getPatientOrientations
             "Transfer and selection of image set in treatment planning system", None
         ] |> createCategoryChecklist Simulation
 
