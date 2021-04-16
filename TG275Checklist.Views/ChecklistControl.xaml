@@ -65,7 +65,7 @@
                                     <DataTemplate>
                                         <StackPanel>
                                             <TextBlock Text="{Binding Text}"/>
-                                            <TextBlock local:EsapiResultConverter.FormattedText="{Binding EsapiText}" Foreground="{StaticResource MahApps.Brushes.AccentBase}"/>
+                                            <TextBlock local:EsapiResultConverter.FormattedText="{Binding EsapiText}" Foreground="{StaticResource MahApps.Brushes.AccentBase}" Margin="10,0"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </TreeView.ItemTemplate>
