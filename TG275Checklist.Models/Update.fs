@@ -88,7 +88,7 @@ module Update =
                             Plans = course.Plans 
                             |> List.map(fun p -> 
                                 if p.bindingid = id 
-                                then { Id = p.Id; IsChecked = ischecked; bindingid = p.bindingid } 
+                                then { p with IsChecked = ischecked; CourseId = course.CourseId }//{ PlanId = p.PlanId; IsChecked = ischecked; bindingid = p.bindingid; CourseId = course.CourseId; Dose = ""; Oncologist = "" } 
                                 else p) 
                         })
             }, Cmd.none
@@ -97,7 +97,7 @@ module Update =
             { m with 
                 PatientSetupScreenCourses = 
                     m.PatientSetupScreenCourses
-                    |> List.map (fun c -> if c.Id = id then { c with IsExpanded = isexpanded } else c)
+                    |> List.map (fun c -> if c.CourseId = id then { c with IsExpanded = isexpanded } else c)
             }, Cmd.none
         
           /////////////////////////////////////////////////////////
@@ -115,15 +115,11 @@ module Update =
                     [ for c in m.PatientSetupScreenCourses do
                         for p in c.Plans do
                             if p.IsChecked then 
-                                yield { PlanId = p.Id; CourseId = c.Id } ]
-                    |> List.map(fun plan ->
+                                yield (c, p) ]
+                    |> List.map(fun (course, plan) ->
                         {
-                            PlanDetails =
-                                {
-                                    PlanId = plan.PlanId;
-                                    CourseId = plan.CourseId
-                                }
-                            Checklists = fullChecklist |> createFullChecklistWithAsyncTokens {PlanId = plan.PlanId; CourseId = plan.CourseId}
+                            PlanDetails = plan
+                            Checklists = fullChecklist |> createFullChecklistWithAsyncTokens plan
                         }
                 )
             }, Cmd.ofMsg PrepToLoadNextChecklist
@@ -141,9 +137,9 @@ module Update =
                 } , Cmd.ofMsg LoadNextChecklist
         | LoadNextChecklist ->
             m, Cmd.OfAsync.either loadNextEsapiResultsAsync m id LoadChecklistFailure
-        | LoadChecklistSuccess newFullChecklists ->
+        | LoadChecklistSuccess newPlanChecklists ->
             { m with
-                ChecklistScreenPlans = newFullChecklists
+                ChecklistScreenPlans = newPlanChecklists
             }, Cmd.ofMsg PrepToLoadNextChecklist
         | LoadChecklistFailure x -> 
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Populate Plan Results from Eclipse") |> ignore

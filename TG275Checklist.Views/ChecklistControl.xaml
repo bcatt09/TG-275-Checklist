@@ -42,7 +42,7 @@
     </UserControl.Resources>
 
     <!-- Plan Selection -->
-    <TabControl ItemsSource="{Binding Plans}" mah:TabControlHelper.Underlined="SelectedTabItem">
+    <TabControl ItemsSource="{Binding Plans}" mah:TabControlHelper.Underlined="SelectedTabItem" TabStripPlacement="Bottom">
         <TabControl.ItemTemplate>
             <DataTemplate>
                 <TextBlock Text="{Binding PlanId}"/>
@@ -50,29 +50,35 @@
         </TabControl.ItemTemplate>
         <TabControl.ContentTemplate>
             <DataTemplate>
-                <!-- Checklist Categories -->
-                <TabControl ItemsSource="{Binding Checklists}" TabStripPlacement="Left">
-                    <TabControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Category}" Style="{StaticResource ChecklistCategoryText}"/>
-                        </DataTemplate>
-                    </TabControl.ItemTemplate>
-                    <TabControl.ContentTemplate>
-                        <DataTemplate>
-                            <!-- Checklist Items -->
-                            <TreeView ItemsSource="{Binding ChecklistItems}">
-                                <TreeView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Text}"/>
-                                            <TextBlock local:EsapiResultConverter.FormattedText="{Binding EsapiText}" Foreground="{StaticResource MahApps.Brushes.AccentBase}" Margin="10,0"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </TreeView.ItemTemplate>
-                            </TreeView>
-                        </DataTemplate>
-                    </TabControl.ContentTemplate>
-                </TabControl>
+                <DockPanel>
+                    <TextBlock Text="{Binding PatientName}" DockPanel.Dock="Top"/>
+                    <TextBlock Text="{Binding PlanId}" DockPanel.Dock="Top"/>
+                    <TextBlock Text="{Binding Dose}" DockPanel.Dock="Top"/>
+                    <TextBlock Text="{Binding Oncologist}" DockPanel.Dock="Top"/>
+                    <!-- Checklist Categories -->
+                    <TabControl ItemsSource="{Binding Checklists}" TabStripPlacement="Left" DockPanel.Dock="Bottom">
+                        <TabControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Category}" Style="{StaticResource ChecklistCategoryText}"/>
+                            </DataTemplate>
+                        </TabControl.ItemTemplate>
+                        <TabControl.ContentTemplate>
+                            <DataTemplate>
+                                <!-- Checklist Items -->
+                                <TreeView ItemsSource="{Binding ChecklistItems}">
+                                    <TreeView.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Text}"/>
+                                                <TextBlock local:EsapiResultConverter.FormattedText="{Binding EsapiText}" Foreground="{StaticResource MahApps.Brushes.AccentBase}" Margin="10,0"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </TreeView.ItemTemplate>
+                                </TreeView>
+                            </DataTemplate>
+                        </TabControl.ContentTemplate>
+                    </TabControl>
+                </DockPanel>
             </DataTemplate>
         </TabControl.ContentTemplate>
     </TabControl>

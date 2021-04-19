@@ -51,7 +51,7 @@ module EsapiService =
         }
 
     type PureEsapiFunction = PlanSetup -> EsapiResults
-    type EsapiChecklistFunction = PlanDetails -> Async<EsapiResults>
+    type EsapiChecklistFunction = PlanInfo -> Async<EsapiResults>
 
     let runEsapiFunction planDetails (esapiFunc: PureEsapiFunction option) =
         async {

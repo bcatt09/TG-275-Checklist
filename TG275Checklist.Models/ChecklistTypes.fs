@@ -56,8 +56,8 @@ module ChecklistTypes =
         }
     
     // Full checklist for a single plan
-    type FullChecklist =
+    type PlanChecklist =
         {
-            PlanDetails: PlanDetails
+            PlanDetails: PlanInfo
             Checklists: CategoryChecklist list
         }

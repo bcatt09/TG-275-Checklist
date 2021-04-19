@@ -19,13 +19,13 @@ module Model =
             
             // Patient Setup Screen
             
-            PatientSetupScreenCourses: PatientSetupCourse list
+            PatientSetupScreenCourses: CourseInfo list
             PatientSetupScreenToggles: PatientSetupToggleType list
             PatientSetupScreenVisibility: System.Windows.Visibility
             
             // Checklist Screen
             
-            ChecklistScreenPlans: FullChecklist list
+            ChecklistScreenPlans: PlanChecklist list
             ChecklistScreenVisibility: System.Windows.Visibility
         }
         
@@ -41,7 +41,7 @@ module Model =
         // Patient Setup Screen
         
         | LoadCoursesIntoPatientSetup
-        | LoadCoursesSuccess of PatientSetupCourse list
+        | LoadCoursesSuccess of CourseInfo list
         | LoadCoursesFailed of exn
 
         | PatientSetupToggleChanged of PatientSetupToggleType * bool
@@ -54,7 +54,7 @@ module Model =
         | PrepToLoadNextChecklist
         | UpdateLoadingMessage
         | LoadNextChecklist
-        | LoadChecklistSuccess of FullChecklist list
+        | LoadChecklistSuccess of PlanChecklist list
         | LoadChecklistFailure of exn
         | AllChecklistsLoaded
     
@@ -70,13 +70,17 @@ module Model =
 
             PatientSetupScreenCourses = args.Courses |> List.map (fun c -> 
                 { 
-                    Id = c.Id; 
-                    IsExpanded = c.Id = args.OpenedCourseID; 
+                    CourseId = c.CourseId; 
+                    IsExpanded = c.CourseId = args.OpenedCourseID; 
                     Plans = c.Plans |> List.map (fun p ->
                         {
-                            Id = p.Id;
-                            IsChecked = p.Id = args.OpenedPlanID && c.Id = args.OpenedCourseID;
-                            bindingid = getPlanBindingId c.Id p.Id 
+                            PlanId = p.PlanId
+                            CourseId = c.CourseId
+                            Dose = ""
+                            Oncologist = ""
+                            PatientName = ""
+                            IsChecked = p.PlanId = args.OpenedPlanID && c.CourseId = args.OpenedCourseID;
+                            bindingid = getPlanBindingId c.CourseId p.PlanId 
                         })
                 })
             PatientSetupScreenToggles = initToggleList

@@ -3,12 +3,19 @@
 // Raw Course/Plan information (Needs to be outside of a module for XAMLs)
 type PlanInfo =
     {
-        Id: string
+        PlanId: string
+        CourseId: string
+        Dose: string
+        PatientName: string
+        Oncologist: string
+        IsChecked: bool     // Is it checked off to be used in checklists?
+        bindingid: string   // Used for subModel bindings
     }
 type CourseInfo =
     {
-        Id: string
-        Plans: PlanInfo list
+            CourseId: string
+            Plans: PlanInfo list
+            IsExpanded: bool    // Is the course expanded (mainly used for initial model)
     }
 
 // Common types used throughout the application
@@ -23,15 +30,6 @@ module CommonTypes =
             OpenedCourseID: string
             OpenedPlanID: string
         } 
-    
-    // Used wherever plan information is displayed or stored to opening a plan in Eclipse
-    type PlanDetails =
-        {
-            CourseId: string
-            PlanId: string
-            // Dose
-            // Approvals
-        }
 
     // Info displayed by the Main Window
     type MainWindowInfo =

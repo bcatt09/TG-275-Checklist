@@ -42,6 +42,21 @@ module EsapiCalls =
         stringOutput $"{plan.TotalDose} {fail badExample} dose/{pass goodExample} dose"
 
       ///////////////////////////////////////////////////////////
+     /////////////////////// Plan Info /////////////////////////
+    ///////////////////////////////////////////////////////////
+
+    let getPlanInfoDose (plan: PlanSetup) =
+        $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions}"
+
+    let getPlanInfoPatientName (plan: PlanSetup) =
+        let pat = plan.Course.Patient
+        $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
+
+    let getPlanInfoOncologist (plan: PlanSetup) =
+        let pat = plan.Course.Patient
+        $"{pat.PrimaryOncologistId} maybe?"
+
+      ///////////////////////////////////////////////////////////
      ///////////////////// Prescription ////////////////////////
     ///////////////////////////////////////////////////////////
 
