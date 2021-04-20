@@ -136,7 +136,6 @@ module Update =
         | LoadNextChecklist ->
             m, Cmd.OfAsync.either loadNextEsapiResultsAsync m id LoadChecklistFailure
         | LoadChecklistSuccess newPlanChecklists ->
-            let newPlans = newPlanChecklists |> List.map(fun x -> x.)
             { m with
                 ChecklistScreenPlans = newPlanChecklists
             }, Cmd.ofMsg PrepToLoadNextChecklist
