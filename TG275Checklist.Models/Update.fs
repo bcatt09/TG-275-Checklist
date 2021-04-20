@@ -87,8 +87,8 @@ module Update =
                         { course with 
                             Plans = course.Plans 
                             |> List.map(fun p -> 
-                                if p.bindingid = id 
-                                then { p with IsChecked = ischecked; CourseId = course.CourseId }//{ PlanId = p.PlanId; IsChecked = ischecked; bindingid = p.bindingid; CourseId = course.CourseId; Dose = ""; Oncologist = "" } 
+                                if p.getBindingId() = id 
+                                then { p with IsChecked = ischecked; CourseId = course.CourseId }
                                 else p) 
                         })
             }, Cmd.none
@@ -138,6 +138,7 @@ module Update =
         | LoadNextChecklist ->
             m, Cmd.OfAsync.either loadNextEsapiResultsAsync m id LoadChecklistFailure
         | LoadChecklistSuccess newPlanChecklists ->
+            let newPlans = newPlanChecklists |> List.map(fun x -> x.)
             { m with
                 ChecklistScreenPlans = newPlanChecklists
             }, Cmd.ofMsg PrepToLoadNextChecklist

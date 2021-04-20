@@ -56,7 +56,6 @@ module UpdateFunctions =
                                                 match existingPlan with
                                                 | Some p -> p.IsChecked
                                                 | None -> false
-                                            bindingid = getPlanBindingId course.Id plan.Id 
                                         }
                                     | None -> 
                                         {
@@ -66,7 +65,6 @@ module UpdateFunctions =
                                             PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
                                             Oncologist = "Dr"
                                             IsChecked = false
-                                            bindingid = getPlanBindingId course.Id plan.Id
                                         })
                                 |> Seq.toList })
                 |> Seq.toList
@@ -129,11 +127,3 @@ module UpdateFunctions =
         |> List.concat
         |> List.filter (fun cl -> not cl.Loaded)
         |> List.tryHead
-
-
-
-
-
-
-
-        ////////////////// Stuck on Loading Prescription with no animation

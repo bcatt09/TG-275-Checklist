@@ -17,14 +17,14 @@ module Bindings =
             "Id" |> Binding.oneWay (fun (_, p) -> p.PlanId)
             "IsChecked" |> Binding.twoWay (
                 (fun (_, p:PlanInfo) -> p.IsChecked), 
-                (fun value (_, p:PlanInfo) -> PatientSetupUsePlanChanged (p.bindingid, value)))
+                (fun value (_, p:PlanInfo) -> PatientSetupUsePlanChanged (p.getBindingId(), value)))
         ]
     let courseBindings () : Binding<Model * CourseInfo, Msg> list =
         [
             "Id" |> Binding.oneWay (fun (_, c) -> c.CourseId)
             "Plans" |> Binding.subModelSeq(
                 (fun (_, c) -> c.Plans), 
-                (fun (p:PlanInfo) -> p.bindingid), 
+                (fun (p:PlanInfo) -> p.getBindingId()), 
                 patientSetupPlanBindings)
             "IsExpanded" |> Binding.twoWay (
                 (fun (_, c) -> c.IsExpanded), 
@@ -111,7 +111,7 @@ module Bindings =
             // Checklist Screen
             "Plans" |> Binding.subModelSeq(
                 (fun m -> m.ChecklistScreenPlans), 
-                (fun (p:PlanChecklist) -> getPlanBindingId p.PlanDetails.CourseId p.PlanDetails.PlanId), 
+                (fun (p:PlanChecklist) -> p.PlanDetails.getBindingId), 
                 checklistPlanBindings)
             "ChecklistScreenVisibility" |> Binding.oneWay(fun m -> m.ChecklistScreenVisibility)
 
