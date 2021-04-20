@@ -28,17 +28,4 @@ module ChecklistFunctions =
             Loaded = false
             Loading = false
         }
-
-    let tempCreateCategoryChecklistSansFunction category list =
-        {
-            Category = category
-            Checklist = list 
-                        |> List.map(fun text -> 
-                            { initChecklistItem with 
-                                Text = text
-                                Function = None 
-                            })
-            Loaded = false
-            Loading = false
-        }
             
