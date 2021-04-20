@@ -115,5 +115,9 @@ module Bindings =
                 checklistPlanBindings)
             "ChecklistScreenVisibility" |> Binding.oneWay(fun m -> m.ChecklistScreenVisibility)
 
-            "Refresh" |> Binding.cmd Refresh
+            "Debugton" |> Binding.cmd Debugton
+
+            "TestFormatting" |> Binding.oneWay(fun m -> 
+                "Text that's <Pass>good</Pass> and <FAIL>bad</FAIL> and <warn>who even knows</warn>"
+            )
         ]

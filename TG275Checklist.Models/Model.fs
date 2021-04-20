@@ -36,7 +36,6 @@ module Model =
         | EclipseLogin        
         | EclipseLoginSuccess of MainWindowInfo
         | EclipseLoginFailed of exn
-        | Refresh
 
         // Patient Setup Screen
         
@@ -51,12 +50,18 @@ module Model =
         // Checklist Screen
         
         | DisplayChecklistScreen
+
+        //| LoadFullChecklist
+        // TODO: Just use the passed Model for all these?
         | PrepToLoadNextChecklist
         | UpdateLoadingMessage
         | LoadNextChecklist
         | LoadChecklistSuccess of PlanChecklist list
         | LoadChecklistFailure of exn
         | AllChecklistsLoaded
+
+
+        | Debugton
     
     let init args =
         { 

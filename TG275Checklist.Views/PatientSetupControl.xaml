@@ -24,7 +24,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="35"/>
         </Grid.RowDefinitions>
         <!--#region Plan Selection-->
         <DockPanel>

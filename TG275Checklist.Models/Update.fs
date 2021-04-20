@@ -57,8 +57,6 @@ module Update =
             { m with 
                 StatusBar = NoLoadingBar "Failed to load courses from Eclipse" 
             }, Cmd.none
-        | Refresh -> 
-            markAllUnloaded m, Cmd.ofMsg PrepToLoadNextChecklist
 
         | PatientSetupToggleChanged  (id, ischecked) -> 
             { m with 
@@ -147,4 +145,8 @@ module Update =
             m, Cmd.ofMsg PrepToLoadNextChecklist
         | AllChecklistsLoaded ->
             { m with StatusBar = readyStatus }, Cmd.none
+            
+
+        | Debugton -> 
+            markAllUnloaded m, Cmd.ofMsg PrepToLoadNextChecklist
 
