@@ -48,14 +48,14 @@ module ChecklistTypes =
     type CategoryChecklist =
         {
             Category: ChecklistCategory
-            Checklist: ChecklistItem list
+            ChecklistItems: ChecklistItem list
             Loaded: bool
             Loading: bool
         }
     
     // Full checklist for a single plan
-    type FullChecklist =
+    type PlanChecklist =
         {
             PlanDetails: PlanInfo
-            Checklists: CategoryChecklist list
+            CategoryChecklists: CategoryChecklist list
         }

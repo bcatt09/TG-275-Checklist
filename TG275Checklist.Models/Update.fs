@@ -114,7 +114,7 @@ module Update =
                 ChecklistScreenVisibility = Visible
                 PatientSetupScreenVisibility = Collapsed
                 PatientSetupScreenToggles = m.PatientSetupScreenToggles |> List.filter (fun t -> t.IsChecked)         
-                ChecklistScreenPlans = 
+                ChecklistScreenPlanChecklists = 
                     [ for c in m.PatientSetupScreenCourses do
                         for p in c.Plans do
                             if p.IsChecked then 
@@ -122,12 +122,12 @@ module Update =
                     |> List.map(fun plan ->
                         {
                             PlanDetails = plan
-                            Checklists = fullChecklist |> createFullChecklistWithAsyncTokens plan
+                            CategoryChecklists = fullChecklist |> createFullChecklistWithAsyncTokens plan
                         }
                 )
             }, Cmd.ofMsg PrepToLoadNextChecklist
         | PrepToLoadNextChecklist ->
-            { m with ChecklistScreenPlans = markNextUnloadedChecklist m }, Cmd.ofMsg UpdateLoadingMessage
+            { m with ChecklistScreenPlanChecklists = markNextUnloadedChecklist m }, Cmd.ofMsg UpdateLoadingMessage
         | UpdateLoadingMessage ->
             match getLoadingChecklist m with
             | None -> 
@@ -140,9 +140,9 @@ module Update =
                 } , Cmd.ofMsg LoadNextChecklist
         | LoadNextChecklist ->
             m, Cmd.OfAsync.either loadNextEsapiResultsAsync m id LoadChecklistFailure
-        | LoadChecklistSuccess newFullChecklists ->
+        | LoadChecklistSuccess newPlanChecklists ->
             { m with
-                ChecklistScreenPlans = newFullChecklists
+                ChecklistScreenPlanChecklists = newPlanChecklists
             }, Cmd.ofMsg PrepToLoadNextChecklist
         | LoadChecklistFailure x -> 
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Populate Plan Results from Eclipse") |> ignore

@@ -25,7 +25,7 @@ module Model =
             
             // Checklist Screen
             
-            ChecklistScreenPlans: FullChecklist list
+            ChecklistScreenPlanChecklists: PlanChecklist list
             ChecklistScreenVisibility: System.Windows.Visibility
         }
         
@@ -54,7 +54,7 @@ module Model =
         | PrepToLoadNextChecklist
         | UpdateLoadingMessage
         | LoadNextChecklist
-        | LoadChecklistSuccess of FullChecklist list
+        | LoadChecklistSuccess of PlanChecklist list
         | LoadChecklistFailure of exn
         | AllChecklistsLoaded
     
@@ -78,14 +78,14 @@ module Model =
             PatientSetupScreenToggles = initToggleList
             PatientSetupScreenVisibility = Visible
 
-            ChecklistScreenPlans = []
+            ChecklistScreenPlanChecklists = []
             ChecklistScreenVisibility = Collapsed
         }, Cmd.ofMsg EclipseLogin
 
     let debugPrintChecklist (model: Model) =
-        model.ChecklistScreenPlans
+        model.ChecklistScreenPlanChecklists
         |> List.map (fun plan -> 
-            plan.Checklists
+            plan.CategoryChecklists
             |> List.map (fun catChecklist -> $"{catChecklist.Category}\nLoaded - {catChecklist.Loaded}\nLoading - {catChecklist.Loading}")
             |> String.concat "\n"
             |> (+) $"{plan.PlanDetails.PlanId}\n"

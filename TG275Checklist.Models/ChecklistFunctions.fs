@@ -11,7 +11,7 @@ module ChecklistFunctions =
 
     let createCategoryChecklistWithAsyncTokens planDetails checklist = 
         { checklist with 
-            Checklist = checklist.Checklist |> List.map(fun x -> x |> createChecklistItemWithAsyncToken planDetails)}
+            ChecklistItems = checklist.ChecklistItems |> List.map(fun x -> x |> createChecklistItemWithAsyncToken planDetails)}
 
     let createFullChecklistWithAsyncTokens planDetails checklist =
         checklist |> List.map (fun x -> x |> createCategoryChecklistWithAsyncTokens planDetails)
@@ -19,7 +19,7 @@ module ChecklistFunctions =
     let createCategoryChecklist category list =
         {
             Category = category
-            Checklist = list 
+            ChecklistItems = list 
                         |> List.map(fun (text, fxn) -> 
                             { ChecklistItem.init with 
                                 Text = text
