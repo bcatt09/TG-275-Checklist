@@ -87,8 +87,8 @@ module Update =
                         { course with 
                             Plans = course.Plans 
                             |> List.map(fun p -> 
-                                if p.bindingid = id 
-                                then { Id = p.Id; IsChecked = ischecked; bindingid = p.bindingid } 
+                                if p.bindingId = id 
+                                then { p with IsChecked = ischecked } 
                                 else p) 
                         })
             }, Cmd.none
@@ -97,7 +97,10 @@ module Update =
             { m with 
                 PatientSetupScreenCourses = 
                     m.PatientSetupScreenCourses
-                    |> List.map (fun c -> if c.Id = id then { c with IsExpanded = isexpanded } else c)
+                    |> List.map (fun c -> 
+                        if c.CourseId = id 
+                        then { c with IsExpanded = isexpanded } 
+                        else c)
             }, Cmd.none
         
           /////////////////////////////////////////////////////////
@@ -115,15 +118,11 @@ module Update =
                     [ for c in m.PatientSetupScreenCourses do
                         for p in c.Plans do
                             if p.IsChecked then 
-                                yield { PlanId = p.Id; CourseId = c.Id } ]
+                                yield p ]
                     |> List.map(fun plan ->
                         {
-                            PlanDetails =
-                                {
-                                    PlanId = plan.PlanId;
-                                    CourseId = plan.CourseId
-                                }
-                            Checklists = fullChecklist |> createFullChecklistWithAsyncTokens {PlanId = plan.PlanId; CourseId = plan.CourseId}
+                            PlanDetails = plan
+                            Checklists = fullChecklist |> createFullChecklistWithAsyncTokens plan
                         }
                 )
             }, Cmd.ofMsg PrepToLoadNextChecklist

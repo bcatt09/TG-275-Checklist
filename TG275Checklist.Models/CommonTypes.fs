@@ -1,15 +1,38 @@
 ﻿namespace TG275Checklist.Model
 
-// Raw Course/Plan information (Needs to be outside of a module for XAMLs)
+// Raw Course/Plan information loaded from Eclipse (Needs to be outside of a module for XAMLs)
 type PlanInfo =
     {
-        Id: string
+        PlanId: string
+        CourseId: string
+        PatientName: string
+        PlanDose: string
+        Oncologist: string
+        IsChecked: bool     // Is it checked off to be used in checklists?
     }
+    member this.bindingId = this.CourseId + "\\" + this.PlanId
+    static member init =
+        {
+            PlanId = ""
+            CourseId = ""
+            PatientName = ""
+            PlanDose = ""
+            Oncologist = ""
+            IsChecked = false
+        }
+
 type CourseInfo =
     {
-        Id: string
+        CourseId: string
         Plans: PlanInfo list
+        IsExpanded: bool    // Is the course expanded (mainly used for initial model)
     }
+    static member init =
+        {
+            CourseId = ""
+            Plans = []
+            IsExpanded = false
+        }
 
 // Common types used throughout the application
 [<AutoOpen>]
@@ -23,15 +46,6 @@ module CommonTypes =
             OpenedCourseID: string
             OpenedPlanID: string
         } 
-    
-    // Used wherever plan information is displayed or stored to opening a plan in Eclipse
-    type PlanDetails =
-        {
-            CourseId: string
-            PlanId: string
-            // Dose
-            // Approvals
-        }
 
     // Info displayed by the Main Window
     type MainWindowInfo =

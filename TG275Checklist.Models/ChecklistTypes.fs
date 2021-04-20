@@ -36,15 +36,13 @@ module ChecklistTypes =
             Function: PureEsapiFunction option
             AsyncToken: Async<EsapiResults option>
         }
-
-    // Initial empty checklist item
-    let initChecklistItem =
-        {
-            Text = ""
-            EsapiResults = None
-            Function = None
-            AsyncToken = async { return None }
-        }
+        static member init =
+            {
+                Text = ""
+                EsapiResults = None
+                Function = None
+                AsyncToken = async { return None }
+            }
 
     // Checklist items grouped by category
     type CategoryChecklist =
@@ -58,6 +56,6 @@ module ChecklistTypes =
     // Full checklist for a single plan
     type FullChecklist =
         {
-            PlanDetails: PlanDetails
+            PlanDetails: PlanInfo
             Checklists: CategoryChecklist list
         }

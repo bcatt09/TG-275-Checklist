@@ -31,9 +31,10 @@ module Program =
             |> List.map(fun (course, plans) -> (course, plans |> List.map(fun plan -> plan.Split('\\').[1]))) // Grouped by Course ID
             |> List.map (fun (course, plans) -> 
                 { 
-                    Id = course; 
+                    CourseId = course; 
                     Plans = plans 
-                            |> List.map(fun plan -> { Id = plan }) 
+                            |> List.map(fun plan -> { PlanInfo.init with PlanId = plan; CourseId = course })
+                    IsExpanded = true
                 })  // Final Course list
 
         // Arguments sent from Eclipse to the standalone application in friendly form to be passed to the model

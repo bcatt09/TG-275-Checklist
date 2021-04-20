@@ -21,7 +21,7 @@ module ChecklistFunctions =
             Category = category
             Checklist = list 
                         |> List.map(fun (text, fxn) -> 
-                            { initChecklistItem with 
+                            { ChecklistItem.init with 
                                 Text = text
                                 Function = fxn 
                             })

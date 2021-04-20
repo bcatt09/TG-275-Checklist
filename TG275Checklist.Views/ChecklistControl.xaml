@@ -42,7 +42,7 @@
     </UserControl.Resources>
 
     <!-- Plan Selection -->
-    <TabControl ItemsSource="{Binding Plans}" mah:TabControlHelper.Underlined="SelectedTabItem">
+    <TabControl ItemsSource="{Binding Plans}" mah:TabControlHelper.Underlined="SelectedTabItem" TabStripPlacement="Bottom">
         <TabControl.ItemTemplate>
             <DataTemplate>
                 <TextBlock Text="{Binding PlanId}"/>
@@ -50,29 +50,45 @@
         </TabControl.ItemTemplate>
         <TabControl.ContentTemplate>
             <DataTemplate>
-                <!-- Checklist Categories -->
-                <TabControl ItemsSource="{Binding Checklists}" TabStripPlacement="Left">
-                    <TabControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Category}" Style="{StaticResource ChecklistCategoryText}"/>
-                        </DataTemplate>
-                    </TabControl.ItemTemplate>
-                    <TabControl.ContentTemplate>
-                        <DataTemplate>
-                            <!-- Checklist Items -->
-                            <TreeView ItemsSource="{Binding ChecklistItems}">
-                                <TreeView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Text}"/>
-                                            <TextBlock local:EsapiResultConverter.FormattedText="{Binding EsapiText}" Foreground="{StaticResource MahApps.Brushes.AccentBase}" Margin="10,0"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </TreeView.ItemTemplate>
-                            </TreeView>
-                        </DataTemplate>
-                    </TabControl.ContentTemplate>
-                </TabControl>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="155"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="TG 275 Checklist" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="15"/>
+                    <StackPanel Grid.Column="1" Margin="10" Background="#111">
+                        <TextBlock Text="{Binding PlanId}" Margin="25,5,5,2" />
+                        <TextBlock Text="{Binding PlanDose}" Margin="25,2,5,2" />
+                        <TextBlock Text="{Binding Oncologist}" Margin="25,2,5,5" />
+                    </StackPanel>
+                    <!-- Checklist Categories -->
+                    <TabControl ItemsSource="{Binding Checklists}" TabStripPlacement="Left" Grid.Row="1" Grid.ColumnSpan="2">
+                        <TabControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Category}" Style="{StaticResource ChecklistCategoryText}"/>
+                            </DataTemplate>
+                        </TabControl.ItemTemplate>
+                        <TabControl.ContentTemplate>
+                            <DataTemplate>
+                                <!-- Checklist Items -->
+                                <TreeView ItemsSource="{Binding ChecklistItems}">
+                                    <TreeView.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Text}"/>
+                                                <TextBlock local:EsapiResultConverter.FormattedText="{Binding EsapiText}" Foreground="{StaticResource MahApps.Brushes.AccentBase}" Margin="10,0"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </TreeView.ItemTemplate>
+                                </TreeView>
+                            </DataTemplate>
+                        </TabControl.ContentTemplate>
+                    </TabControl>
+                </Grid>
             </DataTemplate>
         </TabControl.ContentTemplate>
     </TabControl>

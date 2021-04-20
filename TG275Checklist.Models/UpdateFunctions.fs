@@ -32,9 +32,9 @@ module UpdateFunctions =
                 |> Seq.sortByDescending(fun course -> match Option.ofNullable course.StartDateTime with | Some time -> time | None -> new System.DateTime())
                 |> Seq.map (fun course -> 
                     // If the course was already loaded, match its states, otherwise keep it collapsed
-                    let existingCourse = model.PatientSetupScreenCourses |> List.filter (fun c -> c.Id = course.Id) |> List.tryExactlyOne
+                    let existingCourse = model.PatientSetupScreenCourses |> List.filter (fun c -> c.CourseId = course.Id) |> List.tryExactlyOne
                     { 
-                        Id = course.Id; 
+                        CourseId = course.Id; 
                         IsExpanded = 
                             match existingCourse with
                             | Some c -> c.IsExpanded
@@ -45,20 +45,26 @@ module UpdateFunctions =
                                     match existingCourse with
                                     | None -> 
                                         {
-                                            Id = plan.Id
+                                            PlanId = plan.Id
+                                            CourseId = course.Id
+                                            PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
+                                            PlanDose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
+                                            Oncologist = "Dr. so and so"
                                             IsChecked = false
-                                            bindingid = getPlanBindingId course.Id plan.Id
                                         }
                                     | Some existingCourse ->
                                         // If the plan was already loaded, match it's states, otherwise keep it unchecked
-                                        let existingPlan = existingCourse.Plans |> List.filter (fun p -> p.Id = plan.Id) |> List.tryExactlyOne
+                                        let existingPlan = existingCourse.Plans |> List.filter (fun p -> p.PlanId = plan.Id) |> List.tryExactlyOne
                                         { 
-                                            Id = plan.Id; 
+                                            PlanId = plan.Id
+                                            CourseId = course.Id
+                                            PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
+                                            PlanDose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
+                                            Oncologist = "Dr. so and so"
                                             IsChecked = 
                                                 match existingPlan with
                                                 | Some p -> p.IsChecked
                                                 | None -> false
-                                            bindingid = getPlanBindingId course.Id plan.Id 
                                         }) 
                                 |> Seq.toList })
                 |> Seq.toList
@@ -121,11 +127,3 @@ module UpdateFunctions =
         |> List.concat
         |> List.filter (fun cl -> not cl.Loaded)
         |> List.tryHead
-
-
-
-
-
-
-
-        ////////////////// Stuck on Loading Prescription with no animation

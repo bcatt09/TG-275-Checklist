@@ -12,23 +12,23 @@ module Bindings =
       /////////////////////////////////////////////////////////
      //////////////// Patient Setup Screen ///////////////////
     /////////////////////////////////////////////////////////
-    let patientSetupPlanBindings () : Binding<(Model * PatientSetupCourse) * PatientSetupPlan, Msg> list =
+    let patientSetupPlanBindings () : Binding<(Model * CourseInfo) * PlanInfo, Msg> list =
         [
-            "Id" |> Binding.oneWay (fun (_, p) -> p.Id)
+            "Id" |> Binding.oneWay (fun (_, p) -> p.PlanId)
             "IsChecked" |> Binding.twoWay (
-                (fun (_, p:PatientSetupPlan) -> p.IsChecked), 
-                (fun value (_, p:PatientSetupPlan) -> PatientSetupUsePlanChanged (p.bindingid, value)))
+                (fun (_, p:PlanInfo) -> p.IsChecked), 
+                (fun value (_, p:PlanInfo) -> PatientSetupUsePlanChanged (p.bindingId, value)))
         ]
-    let courseBindings () : Binding<Model * PatientSetupCourse, Msg> list =
+    let courseBindings () : Binding<Model * CourseInfo, Msg> list =
         [
-            "Id" |> Binding.oneWay (fun (_, c) -> c.Id)
+            "Id" |> Binding.oneWay (fun (_, c) -> c.CourseId)
             "Plans" |> Binding.subModelSeq(
                 (fun (_, c) -> c.Plans), 
-                (fun (p:PatientSetupPlan) -> p.bindingid), 
+                (fun (p:PlanInfo) -> p.bindingId), 
                 patientSetupPlanBindings)
             "IsExpanded" |> Binding.twoWay (
                 (fun (_, c) -> c.IsExpanded), 
-                (fun value (_, c:PatientSetupCourse) -> PatientSetupCourseIsExpandedChanged (c.Id, value)))
+                (fun value (_, c:CourseInfo) -> PatientSetupCourseIsExpandedChanged (c.CourseId, value)))
         ]
     let toggleBindings () : Binding<Model * PatientSetupToggleType, Msg> list =
         [
@@ -63,6 +63,8 @@ module Bindings =
         [
             "CourseId" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.CourseId)
             "PlanId" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.PlanId)
+            "PlanDose" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.PlanDose)
+            "Oncologist" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.Oncologist)
             "Checklists" |> Binding.subModelSeq(
                 (fun (_, plan) -> plan.Checklists), 
                 (fun (c:CategoryChecklist) -> c.Category.ToString()), 
@@ -94,7 +96,7 @@ module Bindings =
             // Patient Setup Screen
             "Courses" |> Binding.subModelSeq(
                 (fun m -> m.PatientSetupScreenCourses), 
-                (fun (c:PatientSetupCourse) -> c.Id), 
+                (fun (c:CourseInfo) -> c.CourseId), 
                 courseBindings)
             "PatientSetupToggles" |> Binding.subModelSeq(
                 (fun m -> m.PatientSetupScreenToggles), 
@@ -108,7 +110,7 @@ module Bindings =
             // Checklist Screen
             "Plans" |> Binding.subModelSeq(
                 (fun m -> m.ChecklistScreenPlans), 
-                (fun (p:FullChecklist) -> getPlanBindingId p.PlanDetails.CourseId p.PlanDetails.PlanId), 
+                (fun (p:FullChecklist) -> p.PlanDetails.bindingId), 
                 checklistPlanBindings)
             "ChecklistScreenVisibility" |> Binding.oneWay(fun m -> m.ChecklistScreenVisibility)
 

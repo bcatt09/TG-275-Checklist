@@ -50,39 +50,12 @@ module PatientSetupTypes =
     // Plan and toggle list to be displayed on Patient Setup Screen
     type PatientSetupOptions =
         {
-            Plans: PlanDetails list
+            Plans: PlanInfo list
             Toggles: PatientSetupToggleType list
         }
-
-    // Initial empty state of patient setup options
-    let initPatientSetupOptions () = 
-        { 
-            Plans = []
-            Toggles = []
-        }
-
-    // Plans to be displayed in Patient Setup Screen
-    type PatientSetupPlan =
-        {
-            Id: string
-            IsChecked: bool     // Is it checked off to be used in checklists?
-            bindingid: string   // Used for subModel bindings
-        }
-    // Unique plan ID for Binding.subModelSeq (Course/Plan ID combination from Eclipse will be unique)
-    let getPlanBindingId courseId planId = courseId + "\\" + planId
-
-    // Courses to be displayed in Patient Setup Screen
-    type PatientSetupCourse =
-        {
-            Id: string
-            Plans: PatientSetupPlan list
-            IsExpanded: bool    // Is the course expanded (mainly used for initial model)
-        }
-
-    // TODO: get rid of this or Checklists.PlanDetails this is used in App.fs LoadChecklistScreen Msg
-    type PatientSetupSelectedPlan =
-        {
-            PlanId: string
-            CourseId: string
-        }
+        static member init =
+            { 
+                Plans = []
+                Toggles = []
+            }
 
