@@ -9,14 +9,31 @@ type PlanInfo =
         PatientName: string
         Oncologist: string
         IsChecked: bool     // Is it checked off to be used in checklists?
-        bindingid: string   // Used for subModel bindings
     }
+    member this.getBindingId() = this.CourseId + "\\" + this.PlanId
+    static member init() =
+        {
+            PlanId = ""
+            CourseId = ""
+            Dose = ""
+            PatientName = ""
+            Oncologist = ""
+            IsChecked = false
+        }
+
 type CourseInfo =
     {
             CourseId: string
             Plans: PlanInfo list
             IsExpanded: bool    // Is the course expanded (mainly used for initial model)
     }
+    static member init() =
+        {
+            CourseId = ""
+            Plans = []
+            IsExpanded = false
+        }
+
 
 // Common types used throughout the application
 [<AutoOpen>]

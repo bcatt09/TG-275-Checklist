@@ -50,13 +50,23 @@
         </TabControl.ItemTemplate>
         <TabControl.ContentTemplate>
             <DataTemplate>
-                <DockPanel>
-                    <TextBlock Text="{Binding PatientName}" DockPanel.Dock="Top"/>
-                    <TextBlock Text="{Binding PlanId}" DockPanel.Dock="Top"/>
-                    <TextBlock Text="{Binding Dose}" DockPanel.Dock="Top"/>
-                    <TextBlock Text="{Binding Oncologist}" DockPanel.Dock="Top"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="155"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="TG 275 Checklist" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="15"/>
+                    <StackPanel Grid.Column="1" Margin="10" Background="#111">
+                        <TextBlock Text="{Binding PlanId}" Margin="25,5,5,2" />
+                        <TextBlock Text="{Binding Dose}" Margin="25,2,5,2" />
+                        <TextBlock Text="{Binding Oncologist}" Margin="25,2,5,5" />
+                    </StackPanel>
                     <!-- Checklist Categories -->
-                    <TabControl ItemsSource="{Binding Checklists}" TabStripPlacement="Left" DockPanel.Dock="Bottom">
+                    <TabControl ItemsSource="{Binding Checklists}" TabStripPlacement="Left" Grid.Row="1" Grid.ColumnSpan="2">
                         <TabControl.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Category}" Style="{StaticResource ChecklistCategoryText}"/>
@@ -78,7 +88,7 @@
                             </DataTemplate>
                         </TabControl.ContentTemplate>
                     </TabControl>
-                </DockPanel>
+                </Grid>
             </DataTemplate>
         </TabControl.ContentTemplate>
     </TabControl>

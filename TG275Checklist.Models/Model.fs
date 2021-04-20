@@ -80,7 +80,6 @@ module Model =
                             Oncologist = ""
                             PatientName = ""
                             IsChecked = p.PlanId = args.OpenedPlanID && c.CourseId = args.OpenedCourseID;
-                            bindingid = getPlanBindingId c.CourseId p.PlanId 
                         })
                 })
             PatientSetupScreenToggles = initToggleList

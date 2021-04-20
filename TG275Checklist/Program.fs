@@ -34,7 +34,7 @@ module Program =
                 { 
                     CourseId = course; 
                     Plans = plans 
-                            |> List.map(fun plan -> { PlanId = plan; CourseId = course; Dose = ""; Oncologist = ""; PatientName = ""; IsChecked = true; bindingid = PatientSetupTypes.getPlanBindingId course plan })
+                            |> List.map(fun plan -> { PlanInfo.init() with PlanId = plan; CourseId = course })
                     IsExpanded = false
                 })  // Final Course list
 

@@ -61,25 +61,3 @@ module PatientSetupTypes =
             Toggles = []
         }
 
-    //// Plans to be displayed in Patient Setup Screen
-    //type PatientSetupPlan =
-    //    {
-    //        PlanId: string
-    //        CourseId: string
-    //        Dose: string
-    //        PatientName: string
-    //        Oncologist: string
-    //        IsChecked: bool     // Is it checked off to be used in checklists?
-    //        bindingid: string   // Used for subModel bindings
-    //    }
-    // Unique plan ID for Binding.subModelSeq (Course/Plan ID combination from Eclipse will be unique)
-    let getPlanBindingId courseId planId = courseId + "\\" + planId
-
-    //// Courses to be displayed in Patient Setup Screen
-    //type PatientSetupCourse =
-    //    {
-    //        CourseId: string
-    //        Plans: PatientSetupPlan list
-    //        IsExpanded: bool    // Is the course expanded (mainly used for initial model)
-    //    }
-
