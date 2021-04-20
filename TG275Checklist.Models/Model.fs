@@ -25,7 +25,7 @@ module Model =
             
             // Checklist Screen
             
-            ChecklistScreenPlans: PlanChecklist list
+            ChecklistScreenPlanChecklists: PlanChecklist list
             ChecklistScreenVisibility: System.Windows.Visibility
         }
         
@@ -78,26 +78,19 @@ module Model =
                     CourseId = c.CourseId; 
                     IsExpanded = c.CourseId = args.OpenedCourseID; 
                     Plans = c.Plans |> List.map (fun p ->
-                        {
-                            PlanId = p.PlanId
-                            CourseId = c.CourseId
-                            Dose = ""
-                            Oncologist = ""
-                            PatientName = ""
-                            IsChecked = p.PlanId = args.OpenedPlanID && c.CourseId = args.OpenedCourseID;
-                        })
+                        { p with IsChecked = p.PlanId = args.OpenedPlanID && c.CourseId = args.OpenedCourseID })
                 })
             PatientSetupScreenToggles = initToggleList
             PatientSetupScreenVisibility = Visible
 
-            ChecklistScreenPlans = []
+            ChecklistScreenPlanChecklists = []
             ChecklistScreenVisibility = Collapsed
         }, Cmd.ofMsg EclipseLogin
 
     let debugPrintChecklist (model: Model) =
-        model.ChecklistScreenPlans
+        model.ChecklistScreenPlanChecklists
         |> List.map (fun plan -> 
-            plan.Checklists
+            plan.CategoryChecklists
             |> List.map (fun catChecklist -> $"{catChecklist.Category}\nLoaded - {catChecklist.Loaded}\nLoading - {catChecklist.Loading}")
             |> String.concat "\n"
             |> (+) $"{plan.PlanDetails.PlanId}\n"

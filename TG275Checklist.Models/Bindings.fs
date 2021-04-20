@@ -17,14 +17,14 @@ module Bindings =
             "Id" |> Binding.oneWay (fun (_, p) -> p.PlanId)
             "IsChecked" |> Binding.twoWay (
                 (fun (_, p:PlanInfo) -> p.IsChecked), 
-                (fun value (_, p:PlanInfo) -> PatientSetupUsePlanChanged (p.getBindingId(), value)))
+                (fun value (_, p:PlanInfo) -> PatientSetupUsePlanChanged (p.bindingId, value)))
         ]
     let courseBindings () : Binding<Model * CourseInfo, Msg> list =
         [
             "Id" |> Binding.oneWay (fun (_, c) -> c.CourseId)
             "Plans" |> Binding.subModelSeq(
                 (fun (_, c) -> c.Plans), 
-                (fun (p:PlanInfo) -> p.getBindingId()), 
+                (fun (p:PlanInfo) -> p.bindingId), 
                 patientSetupPlanBindings)
             "IsExpanded" |> Binding.twoWay (
                 (fun (_, c) -> c.IsExpanded), 
@@ -53,7 +53,7 @@ module Bindings =
     let checklistBindings () : Binding<(Model * PlanChecklist) * CategoryChecklist, Msg> list =
         [
             "ChecklistItems" |> Binding.subModelSeq(
-                (fun (_, checklist) -> checklist.Checklist), 
+                (fun (_, checklist) -> checklist.ChecklistItems), 
                 (fun (item:ChecklistItem) -> item.Text), 
                 checklistItemBindings)
             "Category" |> Binding.oneWay(fun (_, checklist) -> checklist.Category.ToReadableString())
@@ -63,11 +63,10 @@ module Bindings =
         [
             "CourseId" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.CourseId)
             "PlanId" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.PlanId)
-            "Dose" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.Dose)
-            "PatientName" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.PatientName)
+            "PlanDose" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.PlanDose)
             "Oncologist" |> Binding.oneWay(fun (_, plan) -> plan.PlanDetails.Oncologist)
-            "Checklists" |> Binding.subModelSeq(
-                (fun (_, plan) -> plan.Checklists), 
+            "CategoryChecklists" |> Binding.subModelSeq(
+                (fun (_, plan) -> plan.CategoryChecklists), 
                 (fun (c:CategoryChecklist) -> c.Category.ToString()), 
                 checklistBindings)
         ]
@@ -110,8 +109,8 @@ module Bindings =
             
             // Checklist Screen
             "Plans" |> Binding.subModelSeq(
-                (fun m -> m.ChecklistScreenPlans), 
-                (fun (p:PlanChecklist) -> p.PlanDetails.getBindingId), 
+                (fun m -> m.ChecklistScreenPlanChecklists), 
+                (fun (p:PlanChecklist) -> p.PlanDetails.bindingId), 
                 checklistPlanBindings)
             "ChecklistScreenVisibility" |> Binding.oneWay(fun m -> m.ChecklistScreenVisibility)
 

@@ -43,29 +43,29 @@ module UpdateFunctions =
                                 |> Seq.sortByDescending(fun plan -> match Option.ofNullable plan.CreationDateTime with | Some time -> time | None -> new System.DateTime())
                                 |> Seq.map(fun plan -> 
                                     match existingCourse with
+                                    | None -> 
+                                        {
+                                            PlanId = plan.Id
+                                            CourseId = course.Id
+                                            PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
+                                            PlanDose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
+                                            Oncologist = "Dr. so and so"
+                                            IsChecked = false
+                                        }
                                     | Some existingCourse ->
                                         // If the plan was already loaded, match it's states, otherwise keep it unchecked
                                         let existingPlan = existingCourse.Plans |> List.filter (fun p -> p.PlanId = plan.Id) |> List.tryExactlyOne
                                         { 
                                             PlanId = plan.Id
                                             CourseId = course.Id
-                                            Dose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
                                             PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
-                                            Oncologist = "Dr"
+                                            PlanDose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
+                                            Oncologist = "Dr. so and so"
                                             IsChecked = 
                                                 match existingPlan with
                                                 | Some p -> p.IsChecked
                                                 | None -> false
-                                        }
-                                    | None -> 
-                                        {
-                                            PlanId = plan.Id
-                                            CourseId = course.Id
-                                            Dose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
-                                            PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
-                                            Oncologist = "Dr"
-                                            IsChecked = false
-                                        })
+                                        }) 
                                 |> Seq.toList })
                 |> Seq.toList
             )
@@ -74,17 +74,17 @@ module UpdateFunctions =
 
     // Returns the list of FullChecklists, but with the first instance an an unLoaded CategoryChecklist marked with Loading = true
     let markNextUnloadedChecklist (model: Model) =
-        let plans = model.ChecklistScreenPlans
+        let plans = model.ChecklistScreenPlanChecklists
         // Find which FullChecklist has an unloaded CategoryChecklist first
-        match plans |> List.tryFindIndex(fun x -> x.Checklists |> List.filter(fun y -> not y.Loaded) |> List.length > 0) with
+        match plans |> List.tryFindIndex(fun x -> x.CategoryChecklists |> List.filter(fun y -> not y.Loaded) |> List.length > 0) with
         | Some i -> 
             // Then find the first index of an unloaded CategoryChecklist
-            match plans.[i].Checklists |> List.tryFindIndex(fun x -> not x.Loaded) with
+            match plans.[i].CategoryChecklists |> List.tryFindIndex(fun x -> not x.Loaded) with
             | Some k -> 
                 // Take at the first index of an unloaded CategoryChecklist, and mark it as Loading
-                let newMarkedFullChecklist = plans.[i].Checklists |> List.mapi (fun j x -> if j = k then { x with Loading = true } else x)
+                let newMarkedFullChecklist = plans.[i].CategoryChecklists |> List.mapi (fun j x -> if j = k then { x with Loading = true } else x)
                 // And return the list of FullChecklists where one of them now has a CategoryChecklist marked as Loading
-                plans |> List.mapi (fun j x -> if j = i then { x with Checklists = newMarkedFullChecklist } else x)
+                plans |> List.mapi (fun j x -> if j = i then { x with CategoryChecklists = newMarkedFullChecklist } else x)
             | None -> plans
         | None -> plans
 
@@ -95,35 +95,35 @@ module UpdateFunctions =
 
             let loadCategoryChecklist (checklist: PlanChecklist) =
                 let newChecklist = 
-                    checklist.Checklists
+                    checklist.CategoryChecklists
                     |> List.map (fun x -> 
                         if x.Loading
                         then 
                             { x with 
                                 Loading = false
                                 Loaded = true
-                                Checklist = x.Checklist |> List.map(fun y -> { y with EsapiResults = y.AsyncToken |> Async.RunSynchronously 
+                                ChecklistItems = x.ChecklistItems |> List.map(fun y -> { y with EsapiResults = y.AsyncToken |> Async.RunSynchronously 
                             }) }
                         else x)
-                { checklist with Checklists = newChecklist }
+                { checklist with CategoryChecklists = newChecklist }
 
-            return LoadChecklistSuccess (model.ChecklistScreenPlans |> List.map (fun p -> loadCategoryChecklist p))
+            return LoadChecklistSuccess (model.ChecklistScreenPlanChecklists |> List.map (fun p -> loadCategoryChecklist p))
         }
 
     // Mark all categories as not Loaded to refresh
     let markAllUnloaded (model: Model) =
         let newPlans =
-            model.ChecklistScreenPlans
+            model.ChecklistScreenPlanChecklists
             |> List.map (fun x -> 
                 { x with 
-                    Checklists =
-                        x.Checklists |> List.map (fun y -> { y with Loaded = false })
+                    CategoryChecklists =
+                        x.CategoryChecklists |> List.map (fun y -> { y with Loaded = false })
                 })
-        { model with ChecklistScreenPlans = newPlans }
+        { model with ChecklistScreenPlanChecklists = newPlans }
 
     let getLoadingChecklist (model: Model) =
-        model.ChecklistScreenPlans
-        |> List.map (fun p -> p.Checklists)
+        model.ChecklistScreenPlanChecklists
+        |> List.map (fun p -> p.CategoryChecklists)
         |> List.concat
         |> List.filter (fun cl -> not cl.Loaded)
         |> List.tryHead

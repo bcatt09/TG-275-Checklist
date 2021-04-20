@@ -53,11 +53,9 @@ module PatientSetupTypes =
             Plans: PlanInfo list
             Toggles: PatientSetupToggleType list
         }
-
-    // Initial empty state of patient setup options
-    let initPatientSetupOptions () = 
-        { 
-            Plans = []
-            Toggles = []
-        }
+        static member init =
+            { 
+                Plans = []
+                Toggles = []
+            }
 

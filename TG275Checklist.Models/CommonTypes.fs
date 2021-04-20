@@ -1,33 +1,33 @@
 ﻿namespace TG275Checklist.Model
 
-// Raw Course/Plan information (Needs to be outside of a module for XAMLs)
+// Raw Course/Plan information loaded from Eclipse (Needs to be outside of a module for XAMLs)
 type PlanInfo =
     {
         PlanId: string
         CourseId: string
-        Dose: string
         PatientName: string
+        PlanDose: string
         Oncologist: string
         IsChecked: bool     // Is it checked off to be used in checklists?
     }
-    member this.getBindingId() = this.CourseId + "\\" + this.PlanId
-    static member init() =
+    member this.bindingId = this.CourseId + "\\" + this.PlanId
+    static member init =
         {
             PlanId = ""
             CourseId = ""
-            Dose = ""
             PatientName = ""
+            PlanDose = ""
             Oncologist = ""
             IsChecked = false
         }
 
 type CourseInfo =
     {
-            CourseId: string
-            Plans: PlanInfo list
-            IsExpanded: bool    // Is the course expanded (mainly used for initial model)
+        CourseId: string
+        Plans: PlanInfo list
+        IsExpanded: bool    // Is the course expanded (mainly used for initial model)
     }
-    static member init() =
+    static member init =
         {
             CourseId = ""
             Plans = []

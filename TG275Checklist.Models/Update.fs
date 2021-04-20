@@ -85,8 +85,8 @@ module Update =
                         { course with 
                             Plans = course.Plans 
                             |> List.map(fun p -> 
-                                if p.getBindingId() = id 
-                                then { p with IsChecked = ischecked; CourseId = course.CourseId }
+                                if p.bindingId = id 
+                                then { p with IsChecked = ischecked } 
                                 else p) 
                         })
             }, Cmd.none
@@ -95,7 +95,10 @@ module Update =
             { m with 
                 PatientSetupScreenCourses = 
                     m.PatientSetupScreenCourses
-                    |> List.map (fun c -> if c.CourseId = id then { c with IsExpanded = isexpanded } else c)
+                    |> List.map (fun c -> 
+                        if c.CourseId = id 
+                        then { c with IsExpanded = isexpanded } 
+                        else c)
             }, Cmd.none
         
           /////////////////////////////////////////////////////////
@@ -109,20 +112,20 @@ module Update =
                 ChecklistScreenVisibility = Visible
                 PatientSetupScreenVisibility = Collapsed
                 PatientSetupScreenToggles = m.PatientSetupScreenToggles |> List.filter (fun t -> t.IsChecked)         
-                ChecklistScreenPlans = 
+                ChecklistScreenPlanChecklists = 
                     [ for c in m.PatientSetupScreenCourses do
                         for p in c.Plans do
                             if p.IsChecked then 
-                                yield (c, p) ]
-                    |> List.map(fun (course, plan) ->
+                                yield p ]
+                    |> List.map(fun plan ->
                         {
                             PlanDetails = plan
-                            Checklists = fullChecklist |> createFullChecklistWithAsyncTokens plan
+                            CategoryChecklists = fullChecklist |> createFullChecklistWithAsyncTokens plan
                         }
                 )
             }, Cmd.ofMsg PrepToLoadNextChecklist
         | PrepToLoadNextChecklist ->
-            { m with ChecklistScreenPlans = markNextUnloadedChecklist m }, Cmd.ofMsg UpdateLoadingMessage
+            { m with ChecklistScreenPlanChecklists = markNextUnloadedChecklist m }, Cmd.ofMsg UpdateLoadingMessage
         | UpdateLoadingMessage ->
             match getLoadingChecklist m with
             | None -> 
@@ -137,15 +140,11 @@ module Update =
             m, Cmd.OfAsync.either loadNextEsapiResultsAsync m id LoadChecklistFailure
         | LoadChecklistSuccess newPlanChecklists ->
             { m with
-                ChecklistScreenPlans = newPlanChecklists
+                ChecklistScreenPlanChecklists = newPlanChecklists
             }, Cmd.ofMsg PrepToLoadNextChecklist
         | LoadChecklistFailure x -> 
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Populate Plan Results from Eclipse") |> ignore
             m, Cmd.ofMsg PrepToLoadNextChecklist
         | AllChecklistsLoaded ->
             { m with StatusBar = readyStatus }, Cmd.none
-            
-
-        | Debugton -> 
-            markAllUnloaded m, Cmd.ofMsg PrepToLoadNextChecklist
 

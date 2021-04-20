@@ -34,8 +34,8 @@ module Program =
                 { 
                     CourseId = course; 
                     Plans = plans 
-                            |> List.map(fun plan -> { PlanInfo.init() with PlanId = plan; CourseId = course })
-                    IsExpanded = false
+                            |> List.map(fun plan -> { PlanInfo.init with PlanId = plan; CourseId = course })
+                    IsExpanded = true
                 })  // Final Course list
 
         // Arguments sent from Eclipse to the standalone application in friendly form to be passed to the model
