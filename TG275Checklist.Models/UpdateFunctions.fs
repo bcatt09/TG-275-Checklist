@@ -49,7 +49,7 @@ module UpdateFunctions =
                                             CourseId = course.Id
                                             PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
                                             PlanDose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
-                                            Oncologist = "Dr. so and so"
+                                            Oncologist = oncologistLookup pat.PrimaryOncologistId
                                             IsChecked = false
                                         }
                                     | Some existingCourse ->
@@ -60,7 +60,7 @@ module UpdateFunctions =
                                             CourseId = course.Id
                                             PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
                                             PlanDose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
-                                            Oncologist = "Dr. so and so"
+                                            Oncologist = oncologistLookup pat.PrimaryOncologistId
                                             IsChecked = 
                                                 match existingPlan with
                                                 | Some p -> p.IsChecked
