@@ -8,7 +8,6 @@ open TG275Checklist.Model
 open Model.Model
 open Model.Update
 open Model.Bindings
-open Model
 
 module Program =
 
@@ -54,7 +53,4 @@ module Program =
 
         // Run the Elmish window
         Program.mkProgramWpf (fun () -> init standaloneArgs) update bindings
-        |> Program.withConsoleTrace
-        |> Program.runWindowWithConfig
-            { ElmConfig.Default with LogConsole = true; Measure = true }
-            (window)
+        |> Program.runWindow (window)

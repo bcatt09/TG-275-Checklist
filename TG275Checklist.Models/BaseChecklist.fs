@@ -121,7 +121,7 @@ module BaseChecklist =
             "Full plan check if new plan generated", Some testFunction
             "Old/new CT registration", None
             "Isocenter placement", None
-            "Deformed or new contours", None
+            "Deformed or new contours", Some badTestFunction
             "DVH Comparison", None
             "CTV/PTV coverage", None
             "Organs at risk dose limits", None

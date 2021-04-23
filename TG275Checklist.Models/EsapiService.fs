@@ -54,18 +54,24 @@ module EsapiService =
     type EsapiChecklistFunction = PlanInfo -> Async<EsapiResults>
 
     let runEsapiFunction planDetails (esapiFunc: PureEsapiFunction option) =
+        let log = NLog.LogManager.GetCurrentClassLogger()
+
         async {
-            match esapiFunc with
-            | Some func ->
-                let! result = esapi.Run(fun (pat: Patient) ->
-                    let plan = 
-                        pat.Courses
-                        |> Seq.map(fun c -> c.PlanSetups |> Seq.cast<PlanSetup>)
-                        |> Seq.concat
-                        |> Seq.filter(fun p -> p.Id = planDetails.PlanId && p.Course.Id = planDetails.CourseId)
-                        |> Seq.exactlyOne
-                    func plan
-                )
-                return Some result
-            | None -> return None
+            try
+                match esapiFunc with
+                | Some func ->
+                    let! result = esapi.Run(fun (pat: Patient) ->
+                        let plan = 
+                            pat.Courses
+                            |> Seq.map(fun c -> c.PlanSetups |> Seq.cast<PlanSetup>)
+                            |> Seq.concat
+                            |> Seq.filter(fun p -> p.Id = planDetails.PlanId && p.Course.Id = planDetails.CourseId)
+                            |> Seq.exactlyOne
+                        func plan
+                    )
+                    return Some result
+                | None -> return None
+            with ex ->
+                log.Error($"{planDetails.PlanId} ({planDetails.CourseId})")
+                return Some { Text = $"<Fail>Error running check\n{ex.Message}</Fail>\n{ex.InnerException}"}
         }

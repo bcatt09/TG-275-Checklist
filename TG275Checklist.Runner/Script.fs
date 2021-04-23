@@ -23,6 +23,8 @@ type Script () =
         try
             if context.Patient = null 
             then MessageBox.Show("Please open a patient before running this script", "No Patient Loaded") |> ignore
-            else Process.Start(exePath, $"\"{context.Patient.Id}\" \"{activePlan}\" \"{openedPlans}\"") |> ignore
+            else 
+                // Start the program
+                Process.Start(exePath, $"\"{context.Patient.Id}\" \"{activePlan}\" \"{openedPlans}\"") |> ignore
         with ex ->
             MessageBox.Show($"{ex.Message}\n\n{ex.InnerException}\n\n{ex.StackTrace}", "Failed to start application.") |> ignore

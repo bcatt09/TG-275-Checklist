@@ -107,6 +107,7 @@ module Update =
 
         // Display Checklist Screen
         | DisplayChecklistScreen -> 
+            startLog m
             { m with 
                 StatusBar = indeterminateStatus "Loading Eclipse Data"
                 ChecklistScreenVisibility = Visible
@@ -142,9 +143,18 @@ module Update =
             { m with
                 ChecklistScreenPlanChecklists = newPlanChecklists
             }, Cmd.ofMsg PrepToLoadNextChecklist
-        | LoadChecklistFailure x -> 
-            System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Populate Plan Results from Eclipse") |> ignore
+        | LoadChecklistFailure ex -> 
+            let currentCheck = 
+                match getLoadingChecklist m with
+                | Some check -> check.Category.ToReadableString()
+                | None -> ""
+            let log = NLog.LogManager.GetCurrentClassLogger()
+
+            System.Windows.MessageBox.Show($"{ex.Message}\n\n{ex.InnerException}\n\n{ex.StackTrace}", "Unable to Populate Plan Results from Eclipse") |> ignore
             m, Cmd.ofMsg PrepToLoadNextChecklist
         | AllChecklistsLoaded ->
             { m with StatusBar = readyStatus }, Cmd.none
+            
 
+        | Debugton -> 
+            markAllUnloaded m, Cmd.ofMsg PrepToLoadNextChecklist

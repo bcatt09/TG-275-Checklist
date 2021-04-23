@@ -127,3 +127,16 @@ module UpdateFunctions =
         |> List.concat
         |> List.filter (fun cl -> not cl.Loaded)
         |> List.tryHead
+
+    let startLog (model: Model) =
+        let log = NLog.LogManager.GetCurrentClassLogger()
+        TG275Checklist.Log.Log.Initialize(
+            model.SharedInfo.CurrentUser, 
+            model.SharedInfo.PatientName, 
+            model.PatientSetupScreenCourses 
+            |> List.map (fun c -> 
+                c.Plans 
+                |> List.filter (fun p -> p.IsChecked)
+                |> List.map (fun p -> $"{p.PlanId} ({p.CourseId})"))
+            |> List.concat)
+        log.Info("")

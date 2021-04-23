@@ -37,11 +37,17 @@ module EsapiCalls =
     | Left
     | NA
     
+
+
     let testFunction (plan: PlanSetup) =
         System.Threading.Thread.Sleep(3000)
         let badExample = "BAD"
         let goodExample = "Good"
         stringOutput $"{plan.TotalDose} {fail badExample} dose/{pass goodExample} dose"
+    let badTestFunction (plan: PlanSetup) =
+        failwith "whoops"
+
+
 
       ///////////////////////////////////////////////////////////
      ///////////////////// Prescription ////////////////////////
