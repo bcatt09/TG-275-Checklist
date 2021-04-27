@@ -28,6 +28,8 @@ module EsapiCalls =
 
     let getPassFail condition = if condition then pass else fail
     let getPassWarn condition = if condition then pass else warn
+    let getPassId condition = if condition then pass else id
+    let getIdWarn condition = if condition then id else warn
 
     let stringOutput text =
         { Text = text }
@@ -51,9 +53,11 @@ module EsapiCalls =
         failwith "this has been a test of the emergency broadcast system"
 
 
-
-      ///////////////////////////////////////////////////////////
-     ///////////////////// Prescription ////////////////////////
+        
+        ///////////////////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////
+      ///////////////////// Prescription ////////////////////////
+     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
     let checkForPrescription (rx: RTPrescription) predicate =
@@ -75,7 +79,10 @@ module EsapiCalls =
         match plan.RTPrescription with
         | null -> stringOutput (fail "No prescription attached to plan")
         | rx ->
-            let revision = if rx.RevisionNumber > 0 then fail $"\nRevision number: {rx.RevisionNumber}\nLatest Revision: {rx.LatestRevision.Name}" else pass " - Latest revision"
+            let revision = 
+                if rx.RevisionNumber > 0 
+                then fail $"\nRevision number: {rx.RevisionNumber}\nLatest Revision: {rx.LatestRevision.Name}" 
+                else " - " + pass "Latest revision"
             let targets =
                 rx.Targets
                 |> Seq.map (fun targ -> $"{targ.TargetId}: {targ.DosePerFraction * float targ.NumberOfFractions} = {targ.DosePerFraction} x {targ.NumberOfFractions} Fx")
@@ -210,16 +217,16 @@ Other Linked Plans: {linkedPlans}")
             planCmd.Execute(patId = plan.Course.Patient.Id, planId = plan.Id, courseId = plan.Course.Id)
             |> Seq.map (fun x -> 
                 match x.ScheduledStartTime with
-                | Some time -> sprintf "%s - %s" (time.ToString("dddd")) (time.ToString("m/d/yyyy"))
+                | Some time -> sprintf "%s - %s" (time.ToString("dddd")) (time.ToShortDateString())
                 | None -> "")
             |> String.concat $"\n{tab}"
-        let numScheduled = planText.ToCharArray() |> Array.filter ((=) '\n') |> Seq.length
+        let numScheduled = (planText.ToCharArray() |> Array.filter ((=) '\n') |> Seq.length) + 1
         let planTextOutput = 
             if planText = "" 
-            then warn "No treatment appointments scheduled" 
+            then warn "No machine appointments scheduled" 
             else 
                 sprintf "%s\n%s%s"
-                    (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} fractions scheduled starting from {DateTime.Now.AddDays(-1.0).ToShortDateString()} (doesn't account for primary vs boost)")
+                    (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled starting from {DateTime.Now.AddDays(-1.0).ToShortDateString()} (doesn't account for primary vs boost)")
                     tab
                     planText
         
@@ -359,9 +366,11 @@ Other Linked Plans: {linkedPlans}")
             | intent -> toTitleCase intent
 
         stringOutput $"Course:\n{tab}Intent:\n{tab}{tab}{courseIntent}\n{tab}Diagnosis:\n{tab}{tab}{courseDiagnosis}\nPlan:\n{tab}Intent:\n{tab}{tab}{planIntent}"
-
-      ///////////////////////////////////////////////////////////
-     ////////////////////// Simulation /////////////////////////
+        
+        ///////////////////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////
+      ////////////////////// Simulation /////////////////////////
+     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
     let getPatientOrientations (plan: PlanSetup) =
@@ -371,9 +380,28 @@ Other Linked Plans: {linkedPlans}")
         let result = getPassFail (tx = sim)
 
         stringOutput $"Treatment: \n{tab}{result tx}\nImaging: \n{tab}{result sim}"
+    
+    let getCTInfo (plan: PlanSetup) =
+        match plan.StructureSet.Image with
+        | null -> fail "No image loaded"
+        | ct -> 
+            let creationDate =
+                match ct.CreationDateTime.HasValue with
+                | true -> ct.CreationDateTime.Value.ToShortDateString()
+                | false -> warn "No creation date"
+            let isDateFunction = // If the CT ID is a date we'll highlight is red if it doesn't match, otherwise we'll use yellow
+                if fst (DateTime.TryParse(ct.Id.Substring(0,8)))
+                then getPassFail
+                else getPassWarn
+            let dateResult = isDateFunction (ct.Id.Substring(0,8) = DateTime.Parse(creationDate).ToString("yyyyMMdd"))
+
+            $"Imaging Device for HU Curve: {ct.Series.ImagingDeviceId}\nCT Name: {dateResult ct.Id}\nCreation date: {dateResult creationDate}\n# of slices: {ct.ZSize}"
+        |> stringOutput
         
-      ///////////////////////////////////////////////////////////
-     ////////////////////// Contouring /////////////////////////
+        ///////////////////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////
+      ////////////////////// Contouring /////////////////////////
+     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
     type Laterality =
@@ -514,6 +542,13 @@ Other Linked Plans: {linkedPlans}")
         |> stringOutput
 
     let getContourApprovals (plan:PlanSetup) =
+        // Primary oncologist user ID from database
+        use oncoCmd = new SqlCommandProvider<SqlQueries.sqlGetOncologistUserId, SqlQueries.connectionString>(SqlQueries.connectionString)
+        let oncologistUserId = 
+            oncoCmd.Execute(patId = plan.Course.Patient.Id)
+            |> Seq.map (fun x -> x.app_user_userid.Value)
+            |> Seq.head
+
         let approvals =
             plan.StructureSet.Structures
             |> Seq.map (fun x -> 
@@ -532,16 +567,20 @@ Other Linked Plans: {linkedPlans}")
         if Seq.length distinctApprovals = 1
         then 
             let approval = distinctApprovals |> Seq.exactlyOne
-            let result = getPassWarn (approval.UserDisplayName = oncologistLookup plan.Course.Patient.PrimaryOncologistId)
+            let result = getPassWarn (approval.UserId = oncologistUserId)
             $"All contours approved by {result approval.UserDisplayName} ({approval.UserId})"
         else
             approvals
-            |> Seq.map (fun x -> sprintf "%s approved by %s (%s) at %A" (fst x) (warn (snd x).UserDisplayName) (snd x).UserId (snd x).ApprovalDateTime)
+            |> Seq.map (fun x -> 
+                let result = getIdWarn ((snd x).UserId = oncologistUserId)
+                sprintf "%s approved by %s (%s) at %A" (fst x) (result (snd x).UserDisplayName) (snd x).UserId (snd x).ApprovalDateTime)
             |> String.concat "\n"
         |> stringOutput
-
-      ///////////////////////////////////////////////////////////
-     /////////// Standard Practices and Procedures /////////////
+        
+        ///////////////////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////
+      /////////// Standard Practices and Procedures /////////////
+     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
     let getCourseAndPlanId (plan:PlanSetup) =   
@@ -748,9 +787,11 @@ Other Linked Plans: {linkedPlans}")
                 |> Seq.map (fun x -> sprintf "%s - %s" x.Id x.ToleranceTableLabel)
                 |> String.concat "\n")
         |> stringOutput
-
-      ///////////////////////////////////////////////////////////
-     ////// Dose Distribution and Overall Plan Quality /////////
+        
+        ///////////////////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////
+      ////// Dose Distribution and Overall Plan Quality /////////
+     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
     type ConstraintType =
@@ -939,9 +980,11 @@ Other Linked Plans: {linkedPlans}")
         |> Seq.concat
         |> String.concat "\n\n"
         |> stringOutput
-
-      ///////////////////////////////////////////////////////////
-     /////////////////// Isocenter Checks //////////////////////
+        
+        ///////////////////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////
+      /////////////////// Isocenter Checks //////////////////////
+     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
     let getIsocenters (plan:PlanSetup) = 
@@ -1010,9 +1053,11 @@ Other Linked Plans: {linkedPlans}")
         | 0 -> warn "No isocenters found (No beams in the plan?)"
         | _ -> fail "Error"
         |> stringOutput
-
-      ///////////////////////////////////////////////////////////
-     ////////////////////// Scheduling /////////////////////////
+        
+        ///////////////////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////
+      ////////////////////// Scheduling /////////////////////////
+     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
     let getPlanScheduling (plan:PlanSetup) =

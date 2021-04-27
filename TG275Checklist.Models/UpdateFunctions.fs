@@ -5,6 +5,9 @@ open Model
 open PatientSetupTypes
 open ChecklistTypes
 
+open TG275Checklist.Sql
+open FSharp.Data
+
 open VMS.TPS.Common.Model.API
 
 module UpdateFunctions =
@@ -42,6 +45,12 @@ module UpdateFunctions =
                         Plans = course.PlanSetups 
                                 |> Seq.sortByDescending(fun plan -> match Option.ofNullable plan.CreationDateTime with | Some time -> time | None -> new System.DateTime())
                                 |> Seq.map(fun plan -> 
+                                    // Primary oncologist full display name from database
+                                    use oncoCmd = new SqlCommandProvider<SqlQueries.sqlGetOncologist, SqlQueries.connectionString>(SqlQueries.connectionString)
+                                    let oncologist = 
+                                        oncoCmd.Execute(patId = plan.Course.Patient.Id)
+                                        |> Seq.map (fun x -> x.RadOncName.Value)
+                                        |> Seq.head
                                     match existingCourse with
                                     | None -> 
                                         {
@@ -49,7 +58,7 @@ module UpdateFunctions =
                                             CourseId = course.Id
                                             PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
                                             PlanDose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
-                                            Oncologist = oncologistLookup pat.PrimaryOncologistId
+                                            Oncologist = oncologist
                                             IsChecked = false
                                         }
                                     | Some existingCourse ->
@@ -60,7 +69,7 @@ module UpdateFunctions =
                                             CourseId = course.Id
                                             PatientName = $"{pat.LastName}, {pat.FirstName} ({pat.Id})"
                                             PlanDose = $"{plan.TotalDose} = {plan.DosePerFraction} x {plan.NumberOfFractions} Fx"
-                                            Oncologist = oncologistLookup pat.PrimaryOncologistId
+                                            Oncologist = oncologist
                                             IsChecked = 
                                                 match existingPlan with
                                                 | Some p -> p.IsChecked

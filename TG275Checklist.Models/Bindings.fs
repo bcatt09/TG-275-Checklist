@@ -48,6 +48,7 @@ module Bindings =
                 match item.EsapiResults with 
                 | None -> "" 
                 | Some result -> result.Text)
+            "CalendarDates" |> Binding.oneWayOpt (fun (_, item) -> item.CalendarDatesResult)
         ]
 
     let checklistBindings () : Binding<(Model * PlanChecklist) * CategoryChecklist, Msg> list =

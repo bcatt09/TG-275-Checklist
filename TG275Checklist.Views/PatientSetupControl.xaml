@@ -7,7 +7,7 @@
              xmlns:model="clr-namespace:TG275Checklist.Model;assembly=TG275Checklist.Model"
              x:Name="PatientSetupControl"
              mc:Ignorable="d" 
-             Height="500" Width="800">
+             Height="675" Width="800">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -24,10 +24,11 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="125"/>
+            <RowDefinition Height="75"/>
+            <RowDefinition Height="25"/>
         </Grid.RowDefinitions>
         <!--#region Plan Selection-->
-        <DockPanel>
+        <DockPanel Margin="25">
             <TextBlock Text="Plan Selection:" FontSize="24" Margin="150,15" DockPanel.Dock="Top"/>
             <ScrollViewer VerticalScrollBarVisibility="Auto" DockPanel.Dock="Top">
                 <TreeView ItemsSource="{Binding Courses}" Width="500">
@@ -51,7 +52,7 @@
         </DockPanel>
         <!--#endregion-->
         <!--#region Patient Setup-->
-        <DockPanel Grid.Row="1">
+        <DockPanel Grid.Row="1" Margin="25">
             <TextBlock Text="Patient Setup:" FontSize="24" 
                        Margin="150,15" DockPanel.Dock="Top"/>
             <ListBox ItemsSource="{Binding PatientSetupToggles}" 
@@ -72,5 +73,10 @@
         <Button Content="Next" 
                 Command="{Binding PatientSetupCompleted}"
                 Grid.Row="2" Width="100" Height="25"/>
+        <TextBlock Text="Disclaimer: This is still a work in progress" 
+                   Foreground="{StaticResource MahApps.Brushes.Gray5}"
+                   FontSize="9"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Grid.Row="3"/>
     </Grid>
 </UserControl>

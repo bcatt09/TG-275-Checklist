@@ -33,6 +33,7 @@ module ChecklistTypes =
         {
             Text: string
             EsapiResults: EsapiResults option
+            CalendarDatesResult: List<System.DateTime> option
             Function: PureEsapiFunction option
             AsyncToken: Async<EsapiResults option>
         }
@@ -40,6 +41,7 @@ module ChecklistTypes =
             {
                 Text = ""
                 EsapiResults = None
+                CalendarDatesResult = None
                 Function = None
                 AsyncToken = async { return None }
             }

@@ -31,7 +31,7 @@ module BaseChecklist =
             "Motion management: (a) MD directive, (b) breath‐hold parameters, (c) gating parameters, (d) 4D‐CT parameters and data set", None
             "Registration/Fusion of image sets (CT, PET, MRI, etc.)", None                                  // TODO
             "Patient Orientation ‐ CT information matches patient setup", Some getPatientOrientations
-            "Transfer and selection of image set in treatment planning system", None                        // TODO
+            "Transfer and selection of image set in treatment planning system", Some getCTInfo
         ] |> createCategoryChecklist Simulation
 
     let contouringChecklist =
@@ -79,7 +79,7 @@ module BaseChecklist =
             "Plan normalization", Some getPlanNormalization
             "Calculation algorithm and calculation grid size", Some getCalculationAlgorithmInfo
             "Prior Radiation accounted for in plan", None
-            "Plan Sum (e.g. Original plus boost plans)", None
+            "Plan Sum (e.g. Original plus boost plans)", None       // TODO list all plan sums including this plan
         ] |> createCategoryChecklist PlanQuality
        
     let doseVerificationChecklist =
