@@ -3,10 +3,13 @@
 open VMS.TPS.Common.Model.API
 open VMS.TPS.Common.Model.Types
 
+open FSharp.Data
+
 open System
 open System.Globalization
 open System.Text.RegularExpressions
 open System.Collections.Generic
+open TG275Checklist.Sql
 
 module EsapiCalls =
 
@@ -45,7 +48,7 @@ module EsapiCalls =
         let goodExample = "Good"
         stringOutput $"{plan.TotalDose} {fail badExample} dose/{pass goodExample} dose"
     let badTestFunction (plan: PlanSetup) =
-        failwith "whoops"
+        failwith "this has been a test of the emergency broadcast system"
 
 
 
@@ -188,6 +191,42 @@ Other Linked Plans: {linkedPlans}")
         | Ok planInfo, Error rxErr ->
             prescriptionVsPlanOutput (fail rxErr) ($"{planInfo.Target}:\n{tab}{tab}{planInfo.TotalDose} = {planInfo.DosePerFraction} x {planInfo.NumberOfFractions} Fx")
         | Error err, _ -> stringOutput "Something went wrong"
+
+    let getPrescriptionVsPlanFractionationPattern (plan: PlanSetup) =
+        let rx = plan.RTPrescription
+        
+        // Prescription fractionation from database
+        use rxCmd = new SqlCommandProvider<SqlQueries.sqlGetRxFrequency, SqlQueries.connectionString>(SqlQueries.connectionString)
+        let rxText = 
+            checkForPrescription 
+                rx 
+                (rxCmd.Execute(patId = plan.Course.Patient.Id, planId = plan.Id, courseId = plan.Course.Id)
+                |> Seq.map (fun x -> x.Frequency)
+                |> Seq.head)
+
+        // Patient treatment appointments from database
+        use planCmd = new SqlCommandProvider<const(SqlQueries.sqlGetScheduledActivities), SqlQueries.connectionString>(SqlQueries.connectionString)
+        let planText =
+            planCmd.Execute(patId = plan.Course.Patient.Id, planId = plan.Id, courseId = plan.Course.Id)
+            |> Seq.map (fun x -> 
+                match x.ScheduledStartTime with
+                | Some time -> sprintf "%s - %s" (time.ToString("dddd")) (time.ToString("m/d/yyyy"))
+                | None -> "")
+            |> String.concat $"\n{tab}"
+        let numScheduled = planText.ToCharArray() |> Array.filter ((=) '\n') |> Seq.length
+        let planTextOutput = 
+            if planText = "" 
+            then warn "No treatment appointments scheduled" 
+            else 
+                sprintf "%s\n%s%s"
+                    (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} fractions scheduled starting from {DateTime.Now.AddDays(-1.0).ToShortDateString()} (doesn't account for primary vs boost)")
+                    tab
+                    planText
+        
+        // Format output
+        match rxText with
+        | Ok rxInfo -> prescriptionVsPlanOutput rxInfo planTextOutput
+        | Error rxError -> $"Prescription:\n{tab}{fail rxError}\nPlan:\n{tab}{planTextOutput}" |> stringOutput
 
     let getPrescriptionVsPlanEnergy (plan: PlanSetup) =
         let rx = plan.RTPrescription
@@ -769,10 +808,15 @@ Other Linked Plans: {linkedPlans}")
             |> Seq.filter (fun x -> x.DicomType <> "BODY" && x.DicomType <> "EXTERNAL" && (not x.IsEmpty) && x.HasSegment)
             |> Seq.filter (fun x -> x.IsPointInsideSegment(plan.Dose.DoseMax3DLocation))
             |> Seq.sortBy (fun x -> x.Volume)
-            |> Seq.map (fun x -> (if plan.TargetVolumeID = x.Id then pass else id) x.Id)
+            |> Seq.map (fun x -> 
+                (if x.Id = plan.TargetVolumeID
+                then pass 
+                else if OARTypes |> List.contains x.DicomType
+                then fail
+                else id) x.Id)
     
         if Seq.length list = 0
-        then "Hotspot is not within any contoured structures"
+        then warn "Hotspot is not within any contoured structures"
         else 
             sprintf "Hotspot is within:\n%s"
                 (list
@@ -994,4 +1038,4 @@ Other Linked Plans: {linkedPlans}")
 
         let numSessionsText = $"{numSessions} sessions"
 
-        stringOutput $"{getPassWarn (numSessions = plan.NumberOfFractions.Value) numSessionsText} scheduled for treatment {overlappingSessionsText}"
+        stringOutput $"{getPassWarn (numSessions = plan.NumberOfFractions.GetValueOrDefault()) numSessionsText} scheduled for treatment {overlappingSessionsText}"

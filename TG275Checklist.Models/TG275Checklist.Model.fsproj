@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="SqlQueries.fs" />
     <Compile Include="Log.fs" />
     <Content Include="FodyWeavers.xml" />
     <Compile Include="CommonTypes.fs" />
@@ -26,6 +27,9 @@
   <ItemGroup>
     <PackageReference Include="Costura.Fody" Version="4.1.0" />
     <PackageReference Include="Elmish.WPF" Version="3.5.6" />
+    <PackageReference Include="FSharp.Data" Version="4.1.0" />
+    <PackageReference Include="FSharp.Data.SqlClient" Version="2.0.7" />
+    <PackageReference Include="FSharp.Data.TypeProviders" Version="5.0.0.6" />
     <PackageReference Include="NLog" Version="4.7.6" />
     <PackageReference Include="ParallelExtensionsExtras" Version="1.2.0" />
   </ItemGroup>

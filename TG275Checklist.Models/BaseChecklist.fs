@@ -13,7 +13,7 @@ module BaseChecklist =
             "Site and laterality (incl. medical chart to confirm laterality)", None // TODO
             "Prescription vs consult note (e.g. physician report in EMR on plans for treatment)", None
             "Total dose, dose/fractionation, number of fractions", Some getPrescriptionVsPlanDose
-            "Fractionation pattern and regimen (e.g. daily, BID, Quad Shot, regular plan follow by boost, etc.)", None // TODO? with database scrpiting
+            "Fractionation pattern and regimen (e.g. daily, BID, Quad Shot, regular plan follow by boost, etc.)", Some getPrescriptionVsPlanFractionationPattern // TODO make this a calendar
             "Energy matches prescription", Some getPrescriptionVsPlanEnergy                                         // TODO matching check
             "Modality (e.g. electrons, photons, protons, etc.)", Some getPrescriptionVsPlanModality
             "Technique (e.g. 3D, IMRT, VMAT, SBRT, etc.) matches prescription", Some getPrescriptionVsPlanTechnique     // TODO lookup table check
