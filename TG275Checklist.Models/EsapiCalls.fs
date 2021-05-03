@@ -10,6 +10,7 @@ open System.Globalization
 open System.Text.RegularExpressions
 open System.Collections.Generic
 open TG275Checklist.Sql
+open System.Windows.Controls
 
 module EsapiCalls =
 
@@ -31,8 +32,7 @@ module EsapiCalls =
     let getPassId condition = if condition then pass else id
     let getIdWarn condition = if condition then id else warn
 
-    let stringOutput text =
-        { Text = text }
+    let stringOutput text = { EsapiResults.init with Text = text }
 
     let toTitleCase (text: string) =
         CultureInfo("en-US").TextInfo.ToTitleCase(text.ToLower())
@@ -213,26 +213,25 @@ Other Linked Plans: {linkedPlans}")
 
         // Patient treatment appointments from database
         use planCmd = new SqlCommandProvider<const(SqlQueries.sqlGetScheduledActivities), SqlQueries.connectionString>(SqlQueries.connectionString)
-        let planText =
+        let planCmdResultDates = 
             planCmd.Execute(patId = plan.Course.Patient.Id, planId = plan.Id, courseId = plan.Course.Id)
-            |> Seq.map (fun x -> 
-                match x.ScheduledStartTime with
-                | Some time -> sprintf "%s - %s" (time.ToString("dddd")) (time.ToShortDateString())
-                | None -> "")
+            |> Seq.map (fun x -> x.ScheduledStartTime.Value)
+        let planText =
+            planCmdResultDates
+            |> Seq.map (fun time -> sprintf "%s - %s" (time.ToString("dddd")) (time.ToShortDateString()))
             |> String.concat $"\n{tab}"
         let numScheduled = (planText.ToCharArray() |> Array.filter ((=) '\n') |> Seq.length) + 1
         let planTextOutput = 
             if planText = "" 
             then warn "No machine appointments scheduled" 
             else 
-                sprintf "%s\n%s%s"
-                    (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled starting from {DateTime.Now.AddDays(-1.0).ToShortDateString()} (doesn't account for primary vs boost)")
-                    tab
-                    planText
+                getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-3).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}\n{tab}(Machine appointments only, doesn't account primary vs boost, V-sim, or previous courses)"
         
         // Format output
         match rxText with
-        | Ok rxInfo -> prescriptionVsPlanOutput rxInfo planTextOutput
+        | Ok rxInfo -> 
+            { (prescriptionVsPlanOutput rxInfo planTextOutput) with 
+                TreatmentAppointments = Some (planCmdResultDates |> Seq.toList) }
         | Error rxError -> $"Prescription:\n{tab}{fail rxError}\nPlan:\n{tab}{planTextOutput}" |> stringOutput
 
     let getPrescriptionVsPlanEnergy (plan: PlanSetup) =

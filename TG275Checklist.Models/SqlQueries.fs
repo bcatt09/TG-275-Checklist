@@ -32,7 +32,7 @@ module SqlQueries =
                 AND		(ps.PlanSetupId = @planId)
                 AND		(ps.CourseId = @courseId)
                 AND		(act.ActivityCategorySer = '173')
-                AND		(sa.ScheduledStartTime BETWEEN DATEADD(day, - 1, GETDATE()) AND DATEADD(MONTH, 4, GETDATE()))"
+                AND		(sa.ScheduledStartTime BETWEEN DATEADD(MONTH, - 3, GETDATE()) AND DATEADD(MONTH, 4, GETDATE()))"
 
     let [<Literal>] sqlGetOncologistUserId =
         "SELECT      Top(1) pt.LastName, pt.FirstName, gpo.AliasName as RadOnc, usr.app_user_userid

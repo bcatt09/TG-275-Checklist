@@ -5,6 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Schedulers
 open VMS.TPS.Common.Model.API
+open System.Windows.Controls
 
 [<AutoOpen>]
 module EsapiService =
@@ -46,9 +47,11 @@ module EsapiService =
     type EsapiResults =
         {
             Text: string
+            TreatmentAppointments: List<DateTime> option
             //OtherThingsToDisplay1: 'a option
             //OtherThingsToDisplay2: 'a option
         }
+        static member init = { Text = ""; TreatmentAppointments = None}
 
     type PureEsapiFunction = PlanSetup -> EsapiResults
     type EsapiChecklistFunction = PlanInfo -> Async<EsapiResults>
@@ -73,5 +76,5 @@ module EsapiService =
                 | None -> return None
             with ex ->
                 log.Error($"{planDetails.PlanId} ({planDetails.CourseId})")
-                return Some { Text = $"<Fail>Error running check\n{ex.Message}</Fail>\n{ex.InnerException}"}
+                return Some { EsapiResults.init with Text = $"<Fail>Error running check\n{ex.Message}</Fail>\n{ex.InnerException}"}
         }

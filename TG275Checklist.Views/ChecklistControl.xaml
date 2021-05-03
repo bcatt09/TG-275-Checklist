@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:TG275Checklist.Views"
              x:Name="ChecklistControl"
              mc:Ignorable="d" 
@@ -17,7 +17,11 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Cyan.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.FlatButton.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            
+            <local:NullableToVisibilityConverter x:Key="NullableToVisibilityConverter" />
+            <local:HighlightDayConverter x:Key="HighlightDayConverter" />
 
+            <!--#region Checklist Categories-->
             <Style x:Key="ChecklistCategoryText" TargetType="{x:Type TextBlock}">
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
@@ -38,6 +42,7 @@
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
+            <!--#endregion-->
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -88,20 +93,41 @@
                                 <TreeView ItemsSource="{Binding ChecklistItems}">
                                     <TreeView.ItemTemplate>
                                         <DataTemplate>
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding Text}"/>
+                                            <DockPanel>
+                                                <!--#region Checklist Item-->
+                                                <TextBlock Text="{Binding Text}"
+                                                           DockPanel.Dock="Top"
+                                                           Margin="0,2"/>
+                                                <!--#endregion-->
+                                                <!--#region Treatment Appointment Calendar-->
+                                                <Calendar Visibility="{Binding TreatmentAppointments, Converter={StaticResource NullableToVisibilityConverter}}"
+                                                          DockPanel.Dock="Right">
+                                                    <Calendar.CalendarDayButtonStyle>
+                                                        <Style TargetType="CalendarDayButton" BasedOn="{StaticResource MahApps.Styles.CalendarDayButton}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Value="True">
+                                                                    <DataTrigger.Binding>
+                                                                        <MultiBinding Converter="{StaticResource HighlightDayConverter}">
+                                                                            <Binding />
+                                                                            <Binding Path="DataContext.TreatmentAppointments" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Calendar}"/>
+                                                                        </MultiBinding>
+                                                                    </DataTrigger.Binding>
+                                                                    <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}" />
+                                                                    <Setter Property="Foreground" Value="Black" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Calendar.CalendarDayButtonStyle>
+                                                </Calendar>
+                                                <!--#endregion-->
+                                                <!--#region Text Result-->
                                                 <TextBlock local:EsapiResultConverter.FormattedText="{Binding EsapiText}" 
-                                                           Foreground="{StaticResource MahApps.Brushes.AccentBase}" 
-                                                           Margin="10,0"/>
-                                                <!--local:FsCalendar x:Name="DemoCalendar" 
-                                                                 DisplayDate="{Binding Path=DisplayDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                 HighlightedDateText="{Binding Path=HighlightedDateText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                 Grid.Column="0"
-                                                                 HorizontalAlignment="Center"
-                                                                 VerticalAlignment="Center"
-                                                                 Margin="0,0,20,0"
-                                                                 DateHighlightBrush="{StaticResource MahApps.Brushes.Accent2}" /-->
-                                            </StackPanel>
+                                                           Foreground="{StaticResource MahApps.Brushes.AccentBase}"
+                                                           Visibility="{Binding EsapiText, Converter={StaticResource NullableToVisibilityConverter}}"
+                                                           DockPanel.Dock="Top"
+                                                           Margin="10,2"/>
+                                                <!--#endregion-->
+                                            </DockPanel>
                                         </DataTemplate>
                                     </TreeView.ItemTemplate>
                                 </TreeView>

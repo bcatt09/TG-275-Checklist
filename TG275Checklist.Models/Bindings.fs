@@ -44,11 +44,17 @@ module Bindings =
     let checklistItemBindings () : Binding<((Model * PlanChecklist) * CategoryChecklist) * ChecklistItem, Msg> list =
         [
             "Text" |> Binding.oneWay (fun (_, item) -> item.Text)
-            "EsapiText" |> Binding.oneWay (fun (_, item) -> 
+            "EsapiText" |> Binding.oneWayOpt (fun (_, item) -> 
                 match item.EsapiResults with 
-                | None -> "" 
-                | Some result -> result.Text)
-            "CalendarDates" |> Binding.oneWayOpt (fun (_, item) -> item.CalendarDatesResult)
+                | None -> None 
+                | Some result -> Some result.Text)
+            "TreatmentAppointments" |> Binding.oneWayOpt (fun (_, item) ->
+                match item.EsapiResults with
+                | None -> None
+                | Some result -> //result.TreatmentAppointments)
+                    match result.TreatmentAppointments with
+                    | Some appts -> Some (ResizeArray<System.DateTime> appts)  // Convert to System.Collections.Generic.List for use in C# XMAL Converter
+                    | None -> None)
         ]
 
     let checklistBindings () : Binding<(Model * PlanChecklist) * CategoryChecklist, Msg> list =
