@@ -22,7 +22,7 @@ module SqlQueries =
                 AND		(rxprop.PropertyType = '7')"
 
     let [<Literal>] sqlGetScheduledActivities =
-        "SELECT	    pt.LastName, pt.FirstName, act.ActivityCode, sa.ScheduledStartTime
+        "SELECT	    pt.LastName, pt.FirstName, act.ActivityCode, sa.ScheduledStartTime, act.ForeGroundColor
         FROM		Patient AS pt
         INNER JOIN	ScheduledActivity AS sa ON pt.PatientSer = sa.PatientSer
         INNER JOIN	ActivityInstance AS ai ON sa.ActivityInstanceSer = ai.ActivityInstanceSer

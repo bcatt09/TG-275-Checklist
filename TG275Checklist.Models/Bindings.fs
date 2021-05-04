@@ -55,7 +55,7 @@ module Bindings =
                     match result.TreatmentAppointments with
                     | Some appts -> Some (ResizeArray<System.DateTime> (appts |> List.map(fun x -> x.ApptTime)))  // Convert to System.Collections.Generic.List for use in C# XMAL Converter
                     | None -> None)
-            "TreatmentAppointmentNames" |> Binding.oneWayOpt (fun (_, item) ->
+            "TreatmentAppointments" |> Binding.oneWayOpt (fun (_, item) ->
                 match item.EsapiResults with
                 | None -> None
                 | Some result -> //result.TreatmentAppointments)

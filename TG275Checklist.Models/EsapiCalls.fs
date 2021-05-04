@@ -223,6 +223,7 @@ Other Linked Plans: {linkedPlans}")
                 {
                     ApptTime = x.ScheduledStartTime.Value
                     ApptName = x.ActivityCode
+                    ApptColor = TreatmentAppointmentInfo.ConvertFromAriaColor (try x.ForeGroundColor.Value with ex -> ([|byte 255; byte 255; byte 255|]))
                 })
         let numScheduled = (planCmdResultAppts |> Seq.distinctBy(fun x -> x.ApptTime) |> Seq.length)
 

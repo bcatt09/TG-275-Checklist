@@ -49,8 +49,21 @@ module EsapiService =
         {
             ApptTime: DateTime
             ApptName: string
-            //ApptColor: 
+            ApptColor: string
         }
+        static member ConvertFromAriaColor (color: byte[]) =
+            let byteString = BitConverter.ToString(color).Replace("-", "")
+            // For some reason Aria appears to store colors as 
+            // "BBGGRRAA"
+            //  01234567
+            if(byteString.Length < 6)
+            then "#FFFFFF"
+            else
+                let R = byteString.Substring(4, 2)
+                let G = byteString.Substring(2, 2)
+                let B = byteString.Substring(0, 2)
+                $"#{R}{G}{B}"
+
     type EsapiResults =
         {
             Text: string

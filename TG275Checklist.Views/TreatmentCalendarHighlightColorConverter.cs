@@ -7,7 +7,7 @@ using static TG275Checklist.Model.EsapiService;
 
 namespace TG275Checklist.Views
 {
-    public class TreatmentCalendarTooltipConverter : IMultiValueConverter
+    public class TreatmentCalendarHighlightColorConverter : IMultiValueConverter
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
@@ -17,20 +17,13 @@ namespace TG275Checklist.Views
             var date = (DateTime)values[0];
             var appts = values[1] as List<TreatmentAppointmentInfo>;
 
-            var tooltip = "";
+            var brushConverter = new System.Windows.Media.BrushConverter();
 
             foreach (var apptDate in appts)
                 if (apptDate.ApptTime.Date == date.Date)
-                {
-                    var text = $"{apptDate.ApptName} - {apptDate.ApptTime.ToShortTimeString()}";
+                    return brushConverter.ConvertFrom(apptDate.ApptColor);
 
-                    if (tooltip == "")
-                        tooltip = text;
-                    else
-                        tooltip += $"\n{text}";
-                }
-
-            return tooltip;
+            return "";
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

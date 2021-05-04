@@ -19,7 +19,8 @@
             </ResourceDictionary.MergedDictionaries>
 
             <local:NullableToVisibilityConverter x:Key="NullableToVisibilityConverter" />
-            <local:TreatmentCalendarHighlightConverter x:Key="TreatmentCalendarHighlightConverter" />
+            <local:TreatmentCalendarHighlightDatesConverter x:Key="TreatmentCalendarHighlightDatesConverter" />
+            <local:TreatmentCalendarHighlightColorConverter x:Key="TreatmentCalendarHighlightColorConverter" />
             <local:TreatmentCalendarTooltipConverter x:Key="TreatmentCalendarTooltipConverter" />
 
             <!--#region Checklist Categories-->
@@ -101,7 +102,7 @@
                                                            Margin="0,2"/>
                                                 <!--#endregion-->
                                                 <!--#region Treatment Appointment Calendar-->
-                                                <Calendar Visibility="{Binding TreatmentAppointmentDates, Converter={StaticResource NullableToVisibilityConverter}}"
+                                                <Calendar Visibility="{Binding TreatmentAppointments, Converter={StaticResource NullableToVisibilityConverter}}"
                                                           DockPanel.Dock="Right">
                                                     <Calendar.CalendarDayButtonStyle>
                                                         <Style TargetType="CalendarDayButton" BasedOn="{StaticResource MahApps.Styles.CalendarDayButton}">
@@ -109,18 +110,25 @@
                                                             <Style.Triggers>
                                                                 <DataTrigger Value="True">
                                                                     <DataTrigger.Binding>
-                                                                        <MultiBinding Converter="{StaticResource TreatmentCalendarHighlightConverter}">
+                                                                        <MultiBinding Converter="{StaticResource TreatmentCalendarHighlightDatesConverter}">
                                                                             <Binding />
-                                                                            <Binding Path="DataContext.TreatmentAppointmentDates" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Calendar}"/>
+                                                                            <Binding Path="DataContext.TreatmentAppointments" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Calendar}"/>
                                                                         </MultiBinding>
                                                                     </DataTrigger.Binding>
-                                                                    <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}" />
                                                                     <Setter Property="Foreground" Value="Black" />
+                                                                    <Setter Property="Background">
+                                                                        <Setter.Value>
+                                                                            <MultiBinding Converter="{StaticResource TreatmentCalendarHighlightColorConverter}">
+                                                                                <Binding />
+                                                                                <Binding Path="DataContext.TreatmentAppointments" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Calendar}"/>
+                                                                            </MultiBinding>
+                                                                        </Setter.Value>
+                                                                    </Setter>
                                                                     <Setter Property="ToolTip">
                                                                         <Setter.Value>
                                                                             <MultiBinding Converter="{StaticResource TreatmentCalendarTooltipConverter}">
                                                                                 <Binding />
-                                                                                <Binding Path="DataContext.TreatmentAppointmentNames" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Calendar}"/>
+                                                                                <Binding Path="DataContext.TreatmentAppointments" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Calendar}"/>
                                                                             </MultiBinding>
                                                                         </Setter.Value>
                                                                     </Setter>
