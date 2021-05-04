@@ -135,6 +135,7 @@
                                                            Foreground="{StaticResource MahApps.Brushes.AccentBase}"
                                                            Visibility="{Binding EsapiText, Converter={StaticResource NullableToVisibilityConverter}}"
                                                            DockPanel.Dock="Top"
+                                                           VerticalAlignment="Center"
                                                            Margin="10,2"/>
                                                 <!--#endregion-->
                                             </DockPanel>

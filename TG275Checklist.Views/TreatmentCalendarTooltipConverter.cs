@@ -22,10 +22,14 @@ namespace TG275Checklist.Views
 
             foreach (var apptDate in dates)
                 if (apptDate.ApptTime.Date == date.Date)
+                {
+                    var text = $"{apptDate.ApptName} - {apptDate.ApptTime.ToShortTimeString()}";
+
                     if (tooltip == "")
-                        tooltip = apptDate.ApptName;
+                        tooltip = text;
                     else
-                        tooltip += $"\n{apptDate.ApptName}";
+                        tooltip += $"\n{text}";
+                }
 
             return tooltip;
         }

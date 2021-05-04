@@ -218,7 +218,7 @@ Other Linked Plans: {linkedPlans}")
         // Patient treatment appointments from database
         use planCmd = new SqlCommandProvider<const(SqlQueries.sqlGetScheduledActivities), SqlQueries.connectionString>(SqlQueries.connectionString)
         let planCmdResultAppts = 
-            planCmd.Execute(patId = plan.Course.Patient.Id, planId = plan.Id, courseId = plan.Course.Id)
+            planCmd.Execute(patId = plan.Course.Patient.Id)
             |> Seq.map (fun x -> 
                 {
                     ApptTime = x.ScheduledStartTime.Value
@@ -235,10 +235,10 @@ Other Linked Plans: {linkedPlans}")
                     |> Seq.countBy(fun x -> x.ApptTime.Date)
                     |> Seq.filter(fun x -> snd x > 1)
                 sprintf "%s%s\n%s"
-                    (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-3).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}")
+                    (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-1).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}")
                     (if Seq.length bidDays > 1
                         then 
-                            sprintf "\n%sDays with multiple appointments (Mouse over on calendar to right to check):\n%s" tab (bidDays |> Seq.map(fun x -> $"{(fst x).ToShortDateString()} - {snd x} appointments") |> String.concat $"\n{tab}{tab}")
+                            sprintf "\n%sDays with multiple appointments (Mouse over calendar to the right to check):\n%s" tab (warn (bidDays |> Seq.map(fun x -> $"{tab}{tab}{(fst x).ToShortDateString()} - {snd x} appointments") |> String.concat "\n"))
                         else
                             "")
                     $"{tab}(Machine appointments only, doesn't account primary vs boost, V-sim, or previous courses)"
