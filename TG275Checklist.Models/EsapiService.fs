@@ -44,10 +44,17 @@ module EsapiService =
     let esapi = new EsapiAsyncService()
 
     // Any results that will be returned to display in the checklist
+
+    type TreatmentAppointmentInfo =
+        {
+            ApptTime: DateTime
+            ApptName: string
+            //ApptColor: 
+        }
     type EsapiResults =
         {
             Text: string
-            TreatmentAppointments: List<DateTime> option
+            TreatmentAppointments: List<TreatmentAppointmentInfo> option
             //OtherThingsToDisplay1: 'a option
             //OtherThingsToDisplay2: 'a option
         }

@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="FodyWeavers.xml" />
     <Compile Include="SqlQueries.fs" />
     <Compile Include="Log.fs" />
-    <Content Include="FodyWeavers.xml" />
     <Compile Include="CommonTypes.fs" />
     <Compile Include="EsapiService.fs" />
     <Compile Include="PatientSetupTypes.fs" />

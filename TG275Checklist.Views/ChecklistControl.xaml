@@ -17,9 +17,10 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Cyan.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.FlatButton.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            
+
             <local:NullableToVisibilityConverter x:Key="NullableToVisibilityConverter" />
-            <local:HighlightDayConverter x:Key="HighlightDayConverter" />
+            <local:TreatmentCalendarHighlightConverter x:Key="TreatmentCalendarHighlightConverter" />
+            <local:TreatmentCalendarTooltipConverter x:Key="TreatmentCalendarTooltipConverter" />
 
             <!--#region Checklist Categories-->
             <Style x:Key="ChecklistCategoryText" TargetType="{x:Type TextBlock}">
@@ -100,20 +101,29 @@
                                                            Margin="0,2"/>
                                                 <!--#endregion-->
                                                 <!--#region Treatment Appointment Calendar-->
-                                                <Calendar Visibility="{Binding TreatmentAppointments, Converter={StaticResource NullableToVisibilityConverter}}"
+                                                <Calendar Visibility="{Binding TreatmentAppointmentDates, Converter={StaticResource NullableToVisibilityConverter}}"
                                                           DockPanel.Dock="Right">
                                                     <Calendar.CalendarDayButtonStyle>
                                                         <Style TargetType="CalendarDayButton" BasedOn="{StaticResource MahApps.Styles.CalendarDayButton}">
+                                                            <Setter Property="ToolTip" Value="{x:Null}" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Value="True">
                                                                     <DataTrigger.Binding>
-                                                                        <MultiBinding Converter="{StaticResource HighlightDayConverter}">
+                                                                        <MultiBinding Converter="{StaticResource TreatmentCalendarHighlightConverter}">
                                                                             <Binding />
-                                                                            <Binding Path="DataContext.TreatmentAppointments" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Calendar}"/>
+                                                                            <Binding Path="DataContext.TreatmentAppointmentDates" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Calendar}"/>
                                                                         </MultiBinding>
                                                                     </DataTrigger.Binding>
                                                                     <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}" />
                                                                     <Setter Property="Foreground" Value="Black" />
+                                                                    <Setter Property="ToolTip">
+                                                                        <Setter.Value>
+                                                                            <MultiBinding Converter="{StaticResource TreatmentCalendarTooltipConverter}">
+                                                                                <Binding />
+                                                                                <Binding Path="DataContext.TreatmentAppointmentNames" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Calendar}"/>
+                                                                            </MultiBinding>
+                                                                        </Setter.Value>
+                                                                    </Setter>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>

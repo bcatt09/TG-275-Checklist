@@ -75,6 +75,7 @@ module EsapiCalls =
     //let (|RxFFF|RxFlat|RxElectron|) (energy: string) = 
     //    let m = Regex.Match(energy)
 
+    /// <summary>Gets all Prescription fields from ESAPI and highlights the revision number</summary>
     let getFullPrescription (plan: PlanSetup) =
         match plan.RTPrescription with
         | null -> stringOutput (fail "No prescription attached to plan")
@@ -126,6 +127,7 @@ Other Linked Plans: {linkedPlans}")
             DateTime: System.DateTime
         }
 
+    /// <summary>Gets Prescription Approval and Plan Review status and highlights based on their equivalence</summary>
     let getPrescriptionVsPlanApprovals (plan: PlanSetup) =
         let rx = plan.RTPrescription
         let rxApproval = 
@@ -163,6 +165,7 @@ Other Linked Plans: {linkedPlans}")
             NumberOfFractions: System.Nullable<int>
         }
 
+    /// <summary>Gets Prescription and Plan Dose info and highlights based on their equivalence</summary>
     let getPrescriptionVsPlanDose (plan: PlanSetup) =
         let rx = plan.RTPrescription
         let rxDoseInfo = 
@@ -198,7 +201,8 @@ Other Linked Plans: {linkedPlans}")
         | Ok planInfo, Error rxErr ->
             prescriptionVsPlanOutput (fail rxErr) ($"{planInfo.Target}:\n{tab}{tab}{planInfo.TotalDose} = {planInfo.DosePerFraction} x {planInfo.NumberOfFractions} Fx")
         | Error err, _ -> stringOutput "Something went wrong"
-
+    
+    /// <summary>Gets Prescription Fractionation Pattern and Machine Treatment Appointments to display on calendar</summary>
     let getPrescriptionVsPlanFractionationPattern (plan: PlanSetup) =
         let rx = plan.RTPrescription
         
@@ -213,26 +217,38 @@ Other Linked Plans: {linkedPlans}")
 
         // Patient treatment appointments from database
         use planCmd = new SqlCommandProvider<const(SqlQueries.sqlGetScheduledActivities), SqlQueries.connectionString>(SqlQueries.connectionString)
-        let planCmdResultDates = 
+        let planCmdResultAppts = 
             planCmd.Execute(patId = plan.Course.Patient.Id, planId = plan.Id, courseId = plan.Course.Id)
-            |> Seq.map (fun x -> x.ScheduledStartTime.Value)
+            |> Seq.map (fun x -> 
+                {
+                    ApptTime = x.ScheduledStartTime.Value
+                    ApptName = x.ActivityCode
+                })
+        let numScheduled = (planCmdResultAppts |> Seq.distinctBy(fun x -> x.ApptTime) |> Seq.length)
+
         let planText =
-            planCmdResultDates
-            |> Seq.map (fun time -> sprintf "%s - %s" (time.ToString("dddd")) (time.ToShortDateString()))
-            |> String.concat $"\n{tab}"
-        let numScheduled = (planText.ToCharArray() |> Array.filter ((=) '\n') |> Seq.length) + 1
-        let planTextOutput = 
-            if planText = "" 
-            then warn "No machine appointments scheduled" 
+            if Seq.length planCmdResultAppts = 0
+            then warn "No machine appointments scheduled"
             else 
-                getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-3).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}\n{tab}(Machine appointments only, doesn't account primary vs boost, V-sim, or previous courses)"
-        
+                let bidDays = 
+                    planCmdResultAppts 
+                    |> Seq.countBy(fun x -> x.ApptTime.Date)
+                    |> Seq.filter(fun x -> snd x > 1)
+                sprintf "%s%s\n%s"
+                    (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-3).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}")
+                    (if Seq.length bidDays > 1
+                        then 
+                            sprintf "\n%sDays with multiple appointments (Mouse over on calendar to right to check):\n%s" tab (bidDays |> Seq.map(fun x -> $"{(fst x).ToShortDateString()} - {snd x} appointments") |> String.concat $"\n{tab}{tab}")
+                        else
+                            "")
+                    $"{tab}(Machine appointments only, doesn't account primary vs boost, V-sim, or previous courses)"
+           
         // Format output
         match rxText with
         | Ok rxInfo -> 
-            { (prescriptionVsPlanOutput rxInfo planTextOutput) with 
-                TreatmentAppointments = Some (planCmdResultDates |> Seq.toList) }
-        | Error rxError -> $"Prescription:\n{tab}{fail rxError}\nPlan:\n{tab}{planTextOutput}" |> stringOutput
+            { (prescriptionVsPlanOutput rxInfo planText) with 
+                TreatmentAppointments = Some (planCmdResultAppts |> Seq.toList) }
+        | Error rxError -> $"Prescription:\n{tab}{fail rxError}\nPlan:\n{tab}{planText}" |> stringOutput
 
     let getPrescriptionVsPlanEnergy (plan: PlanSetup) =
         let rx = plan.RTPrescription
