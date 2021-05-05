@@ -4,7 +4,9 @@
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile> 
 
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>AnyCPU;x64</Platforms> 
+
+    <AssemblyName>Physics-Check.Model</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

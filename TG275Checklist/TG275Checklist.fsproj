@@ -5,7 +5,7 @@
 		<UseWpf>true</UseWpf>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<OutputType>WinExe</OutputType>
-		<AssemblyName>elm</AssemblyName>
+		<AssemblyName>Physics-Check</AssemblyName>
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 

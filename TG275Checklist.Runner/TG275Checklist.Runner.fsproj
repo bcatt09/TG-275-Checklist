@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyName>elm.esapi</AssemblyName>
+    <AssemblyName>Physics-Check.esapi</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 

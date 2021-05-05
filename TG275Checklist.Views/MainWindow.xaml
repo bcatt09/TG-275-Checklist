@@ -6,7 +6,7 @@
                  xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                  xmlns:views="clr-namespace:TG275Checklist.Views"
                  mc:Ignorable="d"
-                 Title="Checklist"
+                 Title="Physics-Check"
                  Height="750"
                  Width="1100"
                  WindowStartupLocation="CenterScreen"

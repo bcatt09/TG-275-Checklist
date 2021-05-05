@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:views="clr-namespace:TG275Checklist.Views"
-             xmlns:model="clr-namespace:TG275Checklist.Model;assembly=TG275Checklist.Model"
+             xmlns:model="clr-namespace:TG275Checklist.Model;assembly=Physics-Check.Model"
              x:Name="PatientSetupControl"
              mc:Ignorable="d" 
              Height="675" Width="800">
@@ -25,6 +25,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="75"/>
+            <RowDefinition Height="25"/>
             <RowDefinition Height="25"/>
         </Grid.RowDefinitions>
         <!--#region Plan Selection-->
@@ -53,7 +54,7 @@
         <!--#endregion-->
         <!--#region Patient Setup-->
         <DockPanel Grid.Row="1" Margin="25">
-            <TextBlock Text="Patient Setup:" FontSize="24" 
+            <TextBlock Text="Patient Assessment and Intent:" FontSize="24" 
                        Margin="150,15" DockPanel.Dock="Top"/>
             <ListBox ItemsSource="{Binding PatientSetupToggles}" 
                      Width="500" DockPanel.Dock="Top">
@@ -78,5 +79,10 @@
                    FontSize="9"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
                    Grid.Row="3"/>
+        <TextBlock Text="Based on Table S1.A.iii of TG 275" 
+                   Foreground="{StaticResource MahApps.Brushes.Gray5}"
+                   FontSize="9"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Grid.Row="4"/>
     </Grid>
 </UserControl>

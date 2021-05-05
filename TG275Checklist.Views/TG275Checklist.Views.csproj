@@ -4,7 +4,7 @@
     <TargetFramework>net472</TargetFramework>
     <OutputType>Library</OutputType>
     <UseWpf>true</UseWpf>
-    <AssemblyName>elm.Views</AssemblyName>
+    <AssemblyName>Physics-Check.Views</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 

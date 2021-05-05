@@ -66,7 +66,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="TG 275 Checklist" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="15"/>
+                    <TextBlock Text="Physics-Check" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="15"/>
                     <DockPanel Grid.Column="1" Margin="10" Background="#151515">
                         <TextBlock Text="" DockPanel.Dock="Right"/>
                         <StackPanel DockPanel.Dock="Right">

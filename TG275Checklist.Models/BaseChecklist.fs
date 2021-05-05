@@ -118,10 +118,10 @@ module BaseChecklist =
         
     let replanChecklist =
         [
-            "Full plan check if new plan generated", Some testFunction
+            "Full plan check if new plan generated", None
             "Old/new CT registration", None
             "Isocenter placement", None
-            "Deformed or new contours", Some badTestFunction
+            "Deformed or new contours", None
             "DVH Comparison", None
             "CTV/PTV coverage", None
             "Organs at risk dose limits", None
@@ -129,7 +129,7 @@ module BaseChecklist =
         
     let deviationChecklist =
         [
-            "Any unexpected deviations entered into incident learning system", Some testFunction
+            "Any unexpected deviations entered into incident learning system", None
         ] |> createCategoryChecklist Deviations
 
     let fullChecklist = 
