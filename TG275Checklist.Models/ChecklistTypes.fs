@@ -2,6 +2,9 @@
 
 module ChecklistTypes =
     
+    /// <summary>
+    /// Available check categories which are mapped into side panel buttons
+    /// </summary>
     type ChecklistCategory =
         | Prescription
         | Simulation
@@ -14,7 +17,7 @@ module ChecklistTypes =
         | Scheduling
         | Replan
         | Deviations
-        member this.ToReadableString() =
+        override this.ToString() =
             match this with
             | Prescription -> "Prescription"
             | Simulation -> "Simulation"
@@ -28,13 +31,17 @@ module ChecklistTypes =
             | Replan -> "Checks for a Replan"
             | Deviations -> "Deviations"
 
-    // Individual checklist item
+    /// <summary>
+    /// Individual checklist item (Text + ESAPI function/results)
+    /// </summary>
     type ChecklistItem =
         {
             Text: string
             EsapiResults: EsapiResults option
             Function: PureEsapiFunction option
             AsyncToken: Async<EsapiResults option>
+            Loaded: bool
+            Loading: bool
         }
         static member init =
             {
@@ -42,9 +49,13 @@ module ChecklistTypes =
                 EsapiResults = None
                 Function = None
                 AsyncToken = async { return None }
+                Loaded = false
+                Loading = false
             }
 
-    // Checklist items grouped by category
+    /// <summary>
+    /// ChecklistItems grouped by category
+    /// </summary>
     type CategoryChecklist =
         {
             Category: ChecklistCategory
@@ -52,10 +63,28 @@ module ChecklistTypes =
             Loaded: bool
             Loading: bool
         }
+        static member init =
+            {
+                Category = Prescription
+                ChecklistItems = []
+                Loaded = false
+                Loading = false
+            }
     
-    // Full checklist for a single plan
+    /// <summary>
+    /// Full group of CategoryChecklists for a single Plan
+    /// </summary>
     type PlanChecklist =
         {
             PlanDetails: PlanInfo
             CategoryChecklists: CategoryChecklist list
+            Loaded: bool
+            Loading: bool
         }
+        static member init =
+            {
+                PlanDetails = PlanInfo.init
+                CategoryChecklists = []
+                Loaded = false
+                Loading = false
+            }

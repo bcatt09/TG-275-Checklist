@@ -75,7 +75,9 @@ module EsapiCalls =
     //let (|RxFFF|RxFlat|RxElectron|) (energy: string) = 
     //    let m = Regex.Match(energy)
 
-    /// <summary>Gets all Prescription fields from ESAPI and highlights the revision number</summary>
+    /// <summary>
+    /// Gets all Prescription fields from ESAPI and highlights the revision number
+    /// </summary>
     let getFullPrescription (plan: PlanSetup) =
         match plan.RTPrescription with
         | null -> stringOutput (fail "No prescription attached to plan")
@@ -118,34 +120,30 @@ Bolus: {bolus}
 
 Notes: {warn notes}     
 Other Linked Plans: {linkedPlans}")
-    
-    type private approval =
-        {
-            Status: string
-            DisplayName: string
-            Id: string
-            DateTime: System.DateTime
-        }
 
-    /// <summary>Gets Prescription Approval and Plan Review status and highlights based on their equivalence</summary>
+    /// <summary>
+    /// Gets Prescription Approval and Plan Review status and highlights based on their equivalence
+    /// </summary>
     let getPrescriptionVsPlanApprovals (plan: PlanSetup) =
         let rx = plan.RTPrescription
         let rxApproval = 
-            checkForPrescription rx { 
+            checkForPrescription 
+                rx {|
                     Status = rx.Status
                     DisplayName = rx.HistoryUserDisplayName
                     Id = rx.HistoryUserName
                     DateTime = rx.HistoryDateTime
-                }
+                |}
         
         let planApproval = 
             match plan.ApprovalHistory |> Seq.filter (fun h -> h.ApprovalStatus = PlanSetupApprovalStatus.Reviewed) |> Seq.tryHead with
-            | Some approval -> Ok { 
+            | Some approval -> 
+                Ok {|
                     Status = approval.ApprovalStatus.ToString()
                     DisplayName = approval.UserDisplayName
                     Id = approval.UserId
                     DateTime = approval.ApprovalDateTime
-                }
+                |}
             | None -> Error "Plan has not been marked Reviewed by physician"
 
         match rxApproval, planApproval with
@@ -157,14 +155,6 @@ Other Linked Plans: {linkedPlans}")
         | Error rxErr, Ok plan -> prescriptionVsPlanOutput $"{fail rxErr}" $"{plan.Status} by {plan.DisplayName} ({plan.Id}) at {plan.DateTime}"
         | Error rxErr, Error planErr -> prescriptionVsPlanOutput $"{fail rxErr}" $"{fail planErr}"
 
-    type private doseInfo =
-        {
-            Target: string
-            TotalDose: DoseValue
-            DosePerFraction: DoseValue
-            NumberOfFractions: System.Nullable<int>
-        }
-
     /// <summary>Gets Prescription and Plan Dose info and highlights based on their equivalence</summary>
     let getPrescriptionVsPlanDose (plan: PlanSetup) =
         let rx = plan.RTPrescription
@@ -172,20 +162,20 @@ Other Linked Plans: {linkedPlans}")
             checkForPrescription rx (rx.Targets
                     |> Seq.sortByDescending (fun targ -> targ.DosePerFraction.Dose)
                     |> Seq.map (fun targ -> 
-                        {
+                        {|
                             Target = targ.TargetId
                             TotalDose = targ.DosePerFraction * float targ.NumberOfFractions
                             DosePerFraction = targ.DosePerFraction
                             NumberOfFractions = new System.Nullable<int>(targ.NumberOfFractions)
-                        }))
+                        |}))
 
         let planDoseInfo =
-            Ok {
+            Ok {|
                 Target = plan.TargetVolumeID
                 TotalDose = plan.TotalDose
                 DosePerFraction = plan.DosePerFraction
                 NumberOfFractions = plan.NumberOfFractions
-            }
+            |}
 
         match planDoseInfo, rxDoseInfo with
         | Ok planInfo, Ok rxInfo ->
@@ -202,7 +192,9 @@ Other Linked Plans: {linkedPlans}")
             prescriptionVsPlanOutput (fail rxErr) ($"{planInfo.Target}:\n{tab}{tab}{planInfo.TotalDose} = {planInfo.DosePerFraction} x {planInfo.NumberOfFractions} Fx")
         | Error err, _ -> stringOutput "Something went wrong"
     
-    /// <summary>Gets Prescription Fractionation Pattern and Machine Treatment Appointments to display on calendar</summary>
+    /// <summary>
+    /// Gets Prescription Fractionation Pattern and Machine Treatment Appointments to display on calendar
+    /// </summary>
     let getPrescriptionVsPlanFractionationPattern (plan: PlanSetup) =
         let rx = plan.RTPrescription
         

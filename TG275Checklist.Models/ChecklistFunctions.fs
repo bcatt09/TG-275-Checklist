@@ -19,12 +19,13 @@ module ChecklistFunctions =
     let createCategoryChecklist category list =
         {
             Category = category
-            ChecklistItems = list 
-                        |> List.map(fun (text, fxn) -> 
-                            { ChecklistItem.init with 
-                                Text = text
-                                Function = fxn 
-                            })
+            ChecklistItems = 
+                list 
+                |> List.map(fun (text, fxn) -> 
+                    { ChecklistItem.init with 
+                        Text = text
+                        Function = fxn 
+                    })
             Loaded = false
             Loading = false
         }

@@ -50,15 +50,12 @@ module Model =
         // Checklist Screen
         
         | DisplayChecklistScreen
-
-        //| LoadFullChecklist
-        // TODO: Just use the passed Model for all these?
-        | PrepToLoadNextChecklist
-        | UpdateLoadingMessage
-        | LoadNextChecklist
-        | LoadChecklistSuccess of PlanChecklist list
-        | LoadChecklistFailure of exn
-        | AllChecklistsLoaded
+        | UpdateLoadingState
+        | SelectLoadingChecklistItem
+        | LoadChecklistItem of ChecklistItem
+        | LoadChecklistItemSuccess of EsapiResults option
+        | LoadChecklistItemFailure of exn
+        | LoadingComplete
 
 
         | Debugton
@@ -70,7 +67,7 @@ module Model =
                     PatientName = ""
                     CurrentUser = ""
                 }
-            StatusBar = readyStatus
+            StatusBar = StatusBar.ready
             Args = args
 
             PatientSetupScreenCourses = args.Courses |> List.map (fun c -> 

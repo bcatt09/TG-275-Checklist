@@ -11,10 +11,13 @@ open BaseChecklist
 open UpdateFunctions
 
 open type System.Windows.Visibility
+open FSharp.Data
 
 module Update =
 
     let update msg m =
+        let log = NLog.LogManager.GetCurrentClassLogger()
+        
         match msg with
 
           /////////////////////////////////////////////////////////
@@ -24,12 +27,12 @@ module Update =
         // Eclipse login
         | EclipseLogin ->
             { m with 
-                StatusBar = indeterminateStatus "Logging in to Eclipse"
+                StatusBar = StatusBar.indeterminate "Logging in to Eclipse"
             }, Cmd.OfAsync.either loginAsync m.Args id EclipseLoginFailed
         | EclipseLoginSuccess patientInfo -> 
             { m with 
                 SharedInfo = patientInfo
-                StatusBar = readyStatus 
+                StatusBar = StatusBar.ready 
             }, Cmd.ofMsg LoadCoursesIntoPatientSetup
         | EclipseLoginFailed x -> 
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Login to Eclipse") |> ignore
@@ -44,13 +47,13 @@ module Update =
         // Initial load of patient plans IDs from Eclipse
         | LoadCoursesIntoPatientSetup -> 
             { m with 
-                StatusBar = indeterminateStatus "Loading Plans"
+                StatusBar = StatusBar.indeterminate "Loading Plans"
             }, Cmd.OfAsync.either loadCoursesIntoPatientSetup m id LoadCoursesFailed
         // Merge any newly loaded plans from Eclipse with existing plans which were loaded via the plugin ScriptContext to create final Courses to be displayed
         | LoadCoursesSuccess eclipseCourses ->
             { m with 
                 PatientSetupScreenCourses = eclipseCourses
-                StatusBar = readyStatus 
+                StatusBar = StatusBar.ready 
             }, Cmd.none
         | LoadCoursesFailed x ->
             System.Windows.MessageBox.Show($"{x.Message}\n\n{x.InnerException}\n\n{x.StackTrace}", "Unable to Load Course from Eclipse") |> ignore
@@ -104,12 +107,10 @@ module Update =
           /////////////////////////////////////////////////////////
          ////////////////// Checklist Screen /////////////////////
         /////////////////////////////////////////////////////////
-
-        // Display Checklist Screen
         | DisplayChecklistScreen -> 
             startLog m
             { m with 
-                StatusBar = indeterminateStatus "Loading Eclipse Data"
+                StatusBar = StatusBar.indeterminate "Loading Eclipse Data"
                 ChecklistScreenVisibility = Visible
                 PatientSetupScreenVisibility = Collapsed
                 PatientSetupScreenToggles = m.PatientSetupScreenToggles |> List.filter (fun t -> t.IsChecked)         
@@ -119,42 +120,38 @@ module Update =
                             if p.IsChecked then 
                                 yield p ]
                     |> List.map(fun plan ->
-                        {
+                        { PlanChecklist.init with
                             PlanDetails = plan
-                            CategoryChecklists = fullChecklist |> createFullChecklistWithAsyncTokens plan
-                        }
-                )
-            }, Cmd.ofMsg PrepToLoadNextChecklist
-        | PrepToLoadNextChecklist ->
-            { m with ChecklistScreenPlanChecklists = markNextUnloadedChecklist m }, Cmd.ofMsg UpdateLoadingMessage
-        | UpdateLoadingMessage ->
-            match getLoadingChecklist m with
-            | None -> 
-                { m with 
-                    StatusBar = readyStatus
-                }, Cmd.none
-            | Some loadingList -> 
-                { m with 
-                    StatusBar = indeterminateStatus $"Loading {loadingList.Category.ToReadableString()}"
-                } , Cmd.ofMsg LoadNextChecklist
-        | LoadNextChecklist ->
-            m, Cmd.OfAsync.either loadNextEsapiResultsAsync m id LoadChecklistFailure
-        | LoadChecklistSuccess newPlanChecklists ->
-            { m with
-                ChecklistScreenPlanChecklists = newPlanChecklists
-            }, Cmd.ofMsg PrepToLoadNextChecklist
-        | LoadChecklistFailure ex -> 
-            let currentCheck = 
-                match getLoadingChecklist m with
-                | Some check -> check.Category.ToReadableString()
-                | None -> ""
-            let log = NLog.LogManager.GetCurrentClassLogger()
+                            CategoryChecklists = fullChecklist |> createFullChecklistWithAsyncTokens plan })
+            }, Cmd.ofMsg UpdateLoadingState
+        | UpdateLoadingState ->
+            (updateLoadingStates m), Cmd.ofMsg SelectLoadingChecklistItem
+        | SelectLoadingChecklistItem ->
+            match tryFindLoadingChecklistItem m with
+            | Some (plan, cat, item) -> 
+                { m with StatusBar = StatusBar.indeterminate $"{plan.PlanDetails.PlanId} - {cat.Category}" }, Cmd.ofMsg (LoadChecklistItem item)
+            | None -> m, Cmd.ofMsg LoadingComplete
+        | LoadChecklistItem checklistItem ->
+            m, Cmd.OfAsync.either loadEsapiResultsAsync checklistItem id LoadChecklistItemFailure
+        | LoadChecklistItemSuccess esapiResults ->
+            (m |> updateModelWithLoadedEsapiResults esapiResults), Cmd.ofMsg UpdateLoadingState
+        | LoadChecklistItemFailure ex ->
+            match tryFindLoadingChecklistItem m with
+            | Some (_, cat, item) ->
+                let func = item.Function.Value.ToString()
+                match func.IndexOf('+') with
+                | -1 -> log.Error(ex, func)
+                | i -> log.Error(ex, func.Substring(i+1))
+            | None -> ()
+            let failedResult = { EsapiResults.init with Text = EsapiCalls.fail "Error processing results"}
+            (m |> updateModelWithLoadedEsapiResults (Some failedResult)), Cmd.ofMsg UpdateLoadingState
+        | LoadingComplete ->
+            { m with StatusBar = StatusBar.ready }, Cmd.none
 
-            System.Windows.MessageBox.Show($"{ex.Message}\n\n{ex.InnerException}\n\n{ex.StackTrace}", "Unable to Populate Plan Results from Eclipse") |> ignore
-            m, Cmd.ofMsg PrepToLoadNextChecklist
-        | AllChecklistsLoaded ->
-            { m with StatusBar = readyStatus }, Cmd.none
+
+
+
             
-
+        // Refresh data maybe? TODO: Check if this actually refreshes anything
         | Debugton -> 
-            markAllUnloaded m, Cmd.ofMsg PrepToLoadNextChecklist
+            markAllUnloaded m, Cmd.ofMsg UpdateLoadingState

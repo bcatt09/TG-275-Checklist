@@ -12,7 +12,9 @@ open VMS.TPS.Common.Model.API
 
 module UpdateFunctions =
 
-    // Initial Eclipse login function
+    /// <summary>
+    /// Log into Eclipse and open patient
+    /// </summary>
     let loginAsync args =
         async {
             // Log in to Eclipse and get initial patient info
@@ -27,7 +29,9 @@ module UpdateFunctions =
             return EclipseLoginSuccess patientInfo
         }
 
-    // Load courses/plans from Eclipse
+    /// <summary>
+    /// Load course/plan list from Eclipse
+    /// </summary>
     let loadCoursesIntoPatientSetup model =
         async {
             let! courses = esapi.Run(fun (pat : Patient) ->
@@ -81,45 +85,136 @@ module UpdateFunctions =
             return LoadCoursesSuccess courses
         }
 
-    // Returns the list of FullChecklists, but with the first instance an an unLoaded CategoryChecklist marked with Loading = true
-    let markNextUnloadedChecklist (model: Model) =
-        let plans = model.ChecklistScreenPlanChecklists
-        // Find which FullChecklist has an unloaded CategoryChecklist first
-        match plans |> List.tryFindIndex(fun x -> x.CategoryChecklists |> List.filter(fun y -> not y.Loaded) |> List.length > 0) with
-        | Some i -> 
-            // Then find the first index of an unloaded CategoryChecklist
-            match plans.[i].CategoryChecklists |> List.tryFindIndex(fun x -> not x.Loaded) with
-            | Some k -> 
-                // Take at the first index of an unloaded CategoryChecklist, and mark it as Loading
-                let newMarkedFullChecklist = plans.[i].CategoryChecklists |> List.mapi (fun j x -> if j = k then { x with Loading = true } else x)
-                // And return the list of FullChecklists where one of them now has a CategoryChecklist marked as Loading
-                plans |> List.mapi (fun j x -> if j = i then { x with CategoryChecklists = newMarkedFullChecklist } else x)
-            | None -> plans
-        | None -> plans
-
-    // Finds the next CategoryChecklist marked as Loading as populates the data from Eclipse
-    let loadNextEsapiResultsAsync (model: Model) =
+    /// <summary>
+    /// Run the associated ESAPI function and return the success Msg
+    /// </summary>
+    let loadEsapiResultsAsync (checklistItem: ChecklistItem) =
         async{
             do! Async.SwitchToThreadPool()
 
-            let loadCategoryChecklist (checklist: PlanChecklist) =
-                let newChecklist = 
-                    checklist.CategoryChecklists
-                    |> List.map (fun x -> 
-                        if x.Loading
-                        then 
-                            { x with 
-                                Loading = false
-                                Loaded = true
-                                ChecklistItems = x.ChecklistItems |> List.map(fun y -> { y with EsapiResults = y.AsyncToken |> Async.RunSynchronously 
-                            }) }
-                        else x)
-                { checklist with CategoryChecklists = newChecklist }
-
-            return LoadChecklistSuccess (model.ChecklistScreenPlanChecklists |> List.map (fun p -> loadCategoryChecklist p))
+            return LoadChecklistItemSuccess (checklistItem.AsyncToken |> Async.RunSynchronously)
         }
+        
+    /// <summary>
+    /// Mark the first unloaded ChecklistItem within a CategoryChecklist as Loading
+    /// </summary>
+    let updateLoadingStatesWithinCategoryChecklist(cat: CategoryChecklist) =
+        match cat.ChecklistItems |> List.tryFindIndex(fun item -> not item.Loaded) with
+        | None -> cat
+        | Some unloadedItemIndex ->
+        let newChecklistItems =
+            cat.ChecklistItems
+            |> List.mapi(fun i item ->
+                if i <> unloadedItemIndex
+                then item
+                else    // if i = unloadedItemIndex mark it as 'Loading'
+                    { item with Loading = true })
+        // Mark the category as 'Loading' and add the newly updated ChecklistItems
+        { cat with
+            Loading = true
+            ChecklistItems = newChecklistItems }
+            
+    /// <summary>
+    /// Look for first unloaded ChecklistItem within a PlanChecklist's CategoryChecklists and mark it as Loading
+    /// </summary>
+    let updateLoadingStatesWithinPlanChecklist (plan: PlanChecklist) =
+        match plan.CategoryChecklists |> List.tryFindIndex(fun cat -> not cat.Loaded) with
+        | None -> plan
+        | Some unloadedCategoryIndex ->
+            let newCategoryChecklists =
+                plan.CategoryChecklists
+                |> List.mapi(fun i cat ->
+                    if i <> unloadedCategoryIndex
+                    then cat
+                    else    // if i = unloadedCategoryIndex we will repeat search for ChecklistItems
+                        updateLoadingStatesWithinCategoryChecklist cat)
+            // Mark the plan as 'Loading' and add the newly updated CategoryChecklists
+            { plan with
+                Loading = true
+                CategoryChecklists = newCategoryChecklists }
 
-    // Mark all categories as not Loaded to refresh
+    /// <summary>
+    /// Look for first unloaded ChecklistItem within the selected plans and mark it as Loading
+    /// </summary>
+    let updateLoadingStates (model: Model) =
+        match model.ChecklistScreenPlanChecklists |> List.tryFindIndex(fun plan -> not plan.Loaded) with
+        | None -> model
+        | Some unloadedPlanIndex -> 
+            let newPlanChecklists =
+                model.ChecklistScreenPlanChecklists
+                |> List.mapi(fun i plan ->
+                    if i <> unloadedPlanIndex
+                    then plan
+                    else    // if i = unloadedPlanIndex we will repeat search for CategoryChecklists
+                        updateLoadingStatesWithinPlanChecklist plan)
+            // Update with the newly updated PlanChecklists
+            { model with
+                ChecklistScreenPlanChecklists = newPlanChecklists }
+
+    /// <summary>
+    /// Find the currently Loading ChecklistItem within the CategoryChecklist and update its EsapiResults
+    /// </summary>
+    let updateCategoryChecklistWithLoadedEsapiResults (results: EsapiResults option) (cat: CategoryChecklist) =
+        let newChecklistItems =
+            cat.ChecklistItems
+            |> List.map(fun item ->
+                // Find current 'Loading' ChecklistItem and replace it with the newly loaded item
+                if item.Loading
+                then { item with 
+                        EsapiResults = results
+                        Loaded = true
+                        Loading = false }
+                else item)
+        // Then build new CategoryChecklists with this new state of ChecklistItems
+        { cat with 
+            ChecklistItems = newChecklistItems
+            Loaded = (newChecklistItems |> List.sumBy(fun x -> if not x.Loaded then 1 else 0)) = 0
+            Loading = (newChecklistItems |> List.sumBy(fun x -> if not x.Loaded then 1 else 0)) <> 0 }
+            
+    /// <summary>
+    /// Find the currently Loading ChecklistItem within the PlanChecklist and update its EsapiResults
+    /// </summary>
+    let updatePlanChecklistWithLoadedEsapiResults (results: EsapiResults option) (plan: PlanChecklist) =
+        let newCategoryChecklists =
+            plan.CategoryChecklists
+            |> List.map(fun cat -> cat |> updateCategoryChecklistWithLoadedEsapiResults results)
+        // Then build new PlanChecklists with this new state of CategoryChecklists
+        { plan with 
+            CategoryChecklists = newCategoryChecklists
+            Loaded = (newCategoryChecklists |> List.sumBy(fun x -> if not x.Loaded then 1 else 0)) = 0
+            Loading = (newCategoryChecklists |> List.sumBy(fun x -> if not x.Loaded then 1 else 0)) <> 0 }
+
+    /// <summary>
+    /// Find the currently Loading ChecklistItem within the Model and update its EsapiResults
+    /// </summary>
+    let updateModelWithLoadedEsapiResults (results: EsapiResults option) (model: Model) =
+        let newPlanChecklists =
+            model.ChecklistScreenPlanChecklists
+            |> List.map(fun plan -> plan |> updatePlanChecklistWithLoadedEsapiResults results)
+        // Then build new Model with this new state of PlanChecklists
+        { model with ChecklistScreenPlanChecklists = newPlanChecklists }
+
+    /// <summary>
+    /// Find the currently Loading PlanChecklist, CategoryChecklist, and ChecklistItem
+    /// </summary>
+    let tryFindLoadingChecklistItem (model: Model) =
+        model.ChecklistScreenPlanChecklists
+        |> List.filter(fun x -> x.Loading)
+        |> List.map(fun plan ->
+            plan.CategoryChecklists
+            |> List.filter(fun x -> x.Loading)
+            |> List.map(fun cat ->
+                cat.ChecklistItems
+                |> List.filter(fun x -> x.Loading)
+                |> List.map(fun item ->
+                    plan, cat, item)))
+        |> List.concat
+        |> List.concat
+        |> List.tryHead
+        
+    /// <summary>
+    /// Mark all categories as not Loaded to refresh
+    /// </summary>
     let markAllUnloaded (model: Model) =
         let newPlans =
             model.ChecklistScreenPlanChecklists
@@ -129,23 +224,22 @@ module UpdateFunctions =
                         x.CategoryChecklists |> List.map (fun y -> { y with Loaded = false })
                 })
         { model with ChecklistScreenPlanChecklists = newPlans }
-
-    let getLoadingChecklist (model: Model) =
-        model.ChecklistScreenPlanChecklists
-        |> List.map (fun p -> p.CategoryChecklists)
-        |> List.concat
-        |> List.filter (fun cl -> not cl.Loaded)
-        |> List.tryHead
-
+        
+    /// <summary>
+    /// Initialize NLog loging
+    /// </summary>
     let startLog (model: Model) =
-        let log = NLog.LogManager.GetCurrentClassLogger()
-        TG275Checklist.Log.Log.Initialize(
-            model.SharedInfo.CurrentUser, 
-            model.SharedInfo.PatientName, 
-            model.PatientSetupScreenCourses 
-            |> List.map (fun c -> 
-                c.Plans 
-                |> List.filter (fun p -> p.IsChecked)
-                |> List.map (fun p -> $"{p.PlanId} ({p.CourseId})"))
-            |> List.concat)
-        log.Info("")
+        try
+            let log = NLog.LogManager.GetCurrentClassLogger()
+            TG275Checklist.Log.Log.Initialize(
+                model.SharedInfo.CurrentUser, 
+                model.SharedInfo.PatientName, 
+                model.PatientSetupScreenCourses 
+                |> List.map (fun c -> 
+                    c.Plans 
+                    |> List.filter (fun p -> p.IsChecked)
+                    |> List.map (fun p -> $"{p.PlanId} ({p.CourseId})"))
+                |> List.concat)
+            log.Info("")
+        with ex ->
+            System.Windows.MessageBox.Show($"Couldn't initialize log") |> ignore

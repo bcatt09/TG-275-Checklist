@@ -70,7 +70,7 @@ module Bindings =
                 (fun (_, checklist) -> checklist.ChecklistItems), 
                 (fun (item:ChecklistItem) -> item.Text), 
                 checklistItemBindings)
-            "Category" |> Binding.oneWay(fun (_, checklist) -> checklist.Category.ToReadableString())
+            "Category" |> Binding.oneWay(fun (_, checklist) -> checklist.Category.ToString())
         ]
 
     let checklistPlanBindings () : Binding<Model * PlanChecklist, Msg> list =

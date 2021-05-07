@@ -43,8 +43,7 @@ module EsapiService =
     // The service instance that will be used through the application
     let esapi = new EsapiAsyncService()
 
-    // Any results that will be returned to display in the checklist
-
+    // Treatment Appointments which will be displayed on calendar
     type TreatmentAppointmentInfo =
         {
             ApptTime: DateTime
@@ -63,7 +62,8 @@ module EsapiService =
                 let G = byteString.Substring(2, 2)
                 let B = byteString.Substring(0, 2)
                 $"#{R}{G}{B}"
-
+                
+    // Any results that will be returned to display in the checklist
     type EsapiResults =
         {
             Text: string
@@ -77,24 +77,18 @@ module EsapiService =
     type EsapiChecklistFunction = PlanInfo -> Async<EsapiResults>
 
     let runEsapiFunction planDetails (esapiFunc: PureEsapiFunction option) =
-        let log = NLog.LogManager.GetCurrentClassLogger()
-
         async {
-            try
-                match esapiFunc with
-                | Some func ->
-                    let! result = esapi.Run(fun (pat: Patient) ->
-                        let plan = 
-                            pat.Courses
-                            |> Seq.map(fun c -> c.PlanSetups |> Seq.cast<PlanSetup>)
-                            |> Seq.concat
-                            |> Seq.filter(fun p -> p.Id = planDetails.PlanId && p.Course.Id = planDetails.CourseId)
-                            |> Seq.exactlyOne
-                        func plan
-                    )
-                    return Some result
-                | None -> return None
-            with ex ->
-                log.Error($"{planDetails.PlanId} ({planDetails.CourseId})")
-                return Some { EsapiResults.init with Text = $"<Fail>Error running check\n{ex.Message}</Fail>\n{ex.InnerException}"}
+            match esapiFunc with
+            | Some func ->
+                let! result = esapi.Run(fun (pat: Patient) ->
+                    let plan = 
+                        pat.Courses
+                        |> Seq.map(fun c -> c.PlanSetups |> Seq.cast<PlanSetup>)
+                        |> Seq.concat
+                        |> Seq.filter(fun p -> p.Id = planDetails.PlanId && p.Course.Id = planDetails.CourseId)
+                        |> Seq.exactlyOne
+                    func plan
+                )
+                return Some result
+            | None -> return None
         }

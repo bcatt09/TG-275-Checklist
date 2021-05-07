@@ -57,12 +57,10 @@ module CommonTypes =
 
     // Status Bar at bottom of window
     type StatusBar =
-    | NoLoadingBar of string
-    | Indeterminate of IndeterminateStatusBar
-    | Determinate of DeterminateStatusBar
+        | NoLoadingBar of string
+        | Indeterminate of IndeterminateStatusBar
+        | Determinate of DeterminateStatusBar
+        static member ready = NoLoadingBar "Ready"
+        static member indeterminate status = Indeterminate { Status = status }
     and IndeterminateStatusBar = { Status: string }
     and DeterminateStatusBar = { Status: string; min: int; max: int }
-
-    // Status bar helpers
-    let readyStatus = NoLoadingBar "Ready"
-    let indeterminateStatus status = Indeterminate { Status = status }
