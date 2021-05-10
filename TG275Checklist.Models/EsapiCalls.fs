@@ -3,14 +3,11 @@
 open VMS.TPS.Common.Model.API
 open VMS.TPS.Common.Model.Types
 
-open FSharp.Data
-
 open System
 open System.Globalization
 open System.Text.RegularExpressions
 open System.Collections.Generic
 open TG275Checklist.Sql
-open System.Windows.Controls
 
 module EsapiCalls =
 
@@ -199,49 +196,40 @@ Other Linked Plans: {linkedPlans}")
         let rx = plan.RTPrescription
         
         // Prescription fractionation from database
-        use rxCmd = new SqlCommandProvider<SqlQueries.sqlGetRxFrequency, SqlQueries.connectionString>(SqlQueries.connectionString)
-        let rxText = 
-            checkForPrescription 
-                rx 
-                (rxCmd.Execute(patId = plan.Course.Patient.Id, planId = plan.Id, courseId = plan.Course.Id)
-                |> Seq.map (fun x -> x.Frequency)
-                |> Seq.head)
+        match sqlGetRxFrequency plan.Course.Patient.Id plan.Id plan.Course.Id with
+        | Error error -> $"Error getting Prescription Frequency from database: {fail error}" |> stringOutput
+        | Ok result -> 
+            let rxText = checkForPrescription rx result
 
-        // Patient treatment appointments from database
-        use planCmd = new SqlCommandProvider<const(SqlQueries.sqlGetScheduledActivities), SqlQueries.connectionString>(SqlQueries.connectionString)
-        let planCmdResultAppts = 
-            planCmd.Execute(patId = plan.Course.Patient.Id)
-            |> Seq.map (fun x -> 
-                {
-                    ApptTime = x.ScheduledStartTime.Value
-                    ApptName = x.ActivityCode
-                    ApptColor = TreatmentAppointmentInfo.ConvertFromAriaColor (try x.ForeGroundColor.Value with ex -> ([|byte 255; byte 255; byte 255|]))
-                })
-        let numScheduled = (planCmdResultAppts |> Seq.distinctBy(fun x -> x.ApptTime) |> Seq.length)
+            // Patient treatment appointments from database
+            match sqlGetScheduledActivities plan.Course.Patient.Id with
+            | Error error -> $"Error getting Treatment Activities from database: {fail error}" |> stringOutput
+            | Ok patientAppts ->
+                let numScheduled = (patientAppts |> Seq.distinctBy(fun x -> x.ApptTime) |> Seq.length)
 
-        let planText =
-            if Seq.length planCmdResultAppts = 0
-            then warn "No machine appointments scheduled"
-            else 
-                let bidDays = 
-                    planCmdResultAppts 
-                    |> Seq.countBy(fun x -> x.ApptTime.Date)
-                    |> Seq.filter(fun x -> snd x > 1)
-                sprintf "%s%s\n%s"
-                    (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-1).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}")
-                    (if Seq.length bidDays > 1
-                        then 
-                            sprintf "\n%sDays with multiple appointments (Mouse over calendar to the right to check):\n%s" tab (warn (bidDays |> Seq.map(fun x -> $"{tab}{tab}{(fst x).ToShortDateString()} - {snd x} appointments") |> String.concat "\n"))
-                        else
-                            "")
-                    $"{tab}(Machine appointments only, doesn't account primary vs boost, V-sim, or previous courses)"
+                let planText =
+                    if Seq.length patientAppts = 0
+                    then warn "No machine appointments scheduled"
+                    else 
+                        let bidDays = 
+                            patientAppts 
+                            |> Seq.countBy(fun x -> x.ApptTime.Date)
+                            |> Seq.filter(fun x -> snd x > 1)
+                        sprintf "%s%s\n%s"
+                            (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-1).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}")
+                            (if Seq.length bidDays > 1
+                                then 
+                                    sprintf "\n%sDays with multiple appointments (Mouse over calendar to the right to check):\n%s" tab (warn (bidDays |> Seq.map(fun x -> $"{tab}{tab}{(fst x).ToShortDateString()} - {snd x} appointments") |> String.concat "\n"))
+                                else
+                                    "")
+                            $"{tab}(Machine appointments only, doesn't account primary vs boost, V-sim, or previous courses)"
            
-        // Format output
-        match rxText with
-        | Ok rxInfo -> 
-            { (prescriptionVsPlanOutput rxInfo planText) with 
-                TreatmentAppointments = Some (planCmdResultAppts |> Seq.toList) }
-        | Error rxError -> $"Prescription:\n{tab}{fail rxError}\nPlan:\n{tab}{planText}" |> stringOutput
+                // Format output
+                match rxText with
+                | Ok rxInfo -> 
+                    { (prescriptionVsPlanOutput rxInfo planText) with 
+                        TreatmentAppointments = Some (patientAppts |> Seq.toList) }
+                | Error rxError -> $"Prescription:\n{tab}{fail rxError}\nPlan:\n{tab}{planText}" |> stringOutput
 
     let getPrescriptionVsPlanEnergy (plan: PlanSetup) =
         let rx = plan.RTPrescription
@@ -554,13 +542,6 @@ Other Linked Plans: {linkedPlans}")
         |> stringOutput
 
     let getContourApprovals (plan:PlanSetup) =
-        // Primary oncologist user ID from database
-        use oncoCmd = new SqlCommandProvider<SqlQueries.sqlGetOncologistUserId, SqlQueries.connectionString>(SqlQueries.connectionString)
-        let oncologistUserId = 
-            oncoCmd.Execute(patId = plan.Course.Patient.Id)
-            |> Seq.map (fun x -> x.app_user_userid.Value)
-            |> Seq.head
-
         let approvals =
             plan.StructureSet.Structures
             |> Seq.map (fun x -> 
@@ -579,12 +560,20 @@ Other Linked Plans: {linkedPlans}")
         if Seq.length distinctApprovals = 1
         then 
             let approval = distinctApprovals |> Seq.exactlyOne
-            let result = getPassWarn (approval.UserId = oncologistUserId)
+            let result =
+                // Primary oncologist user ID from database
+                match sqlGetOncologistUserId plan.Course.Patient.Id with
+                | Error _ -> id
+                | Ok oncologistUserId -> getPassWarn (approval.UserId = oncologistUserId)    // Check if each structure has been approved by the primary oncologist
             $"All contours approved by {result approval.UserDisplayName} ({approval.UserId})"
         else
             approvals
             |> Seq.map (fun x -> 
-                let result = getIdWarn ((snd x).UserId = oncologistUserId)
+                let result = 
+                    // Primary oncologist user ID from database
+                    match sqlGetOncologistUserId plan.Course.Patient.Id with
+                    | Error _ -> id
+                    | Ok oncologistUserId -> getIdWarn ((snd x).UserId = oncologistUserId)   // Check if structures have been approved by the primary oncologist
                 sprintf "%s approved by %s (%s) at %A" (fst x) (result (snd x).UserDisplayName) (snd x).UserId (snd x).ApprovalDateTime)
             |> String.concat "\n"
         |> stringOutput

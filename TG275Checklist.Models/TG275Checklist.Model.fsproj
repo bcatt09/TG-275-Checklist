@@ -11,10 +11,10 @@
 
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
-    <Compile Include="SqlQueries.fs" />
     <Compile Include="Log.fs" />
     <Compile Include="CommonTypes.fs" />
     <Compile Include="EsapiService.fs" />
+    <Compile Include="SqlQueries.fs" />
     <Compile Include="PatientSetupTypes.fs" />
     <Compile Include="ChecklistTypes.fs" />
     <Compile Include="ChecklistFunctions.fs" />

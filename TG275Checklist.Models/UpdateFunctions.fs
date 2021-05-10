@@ -9,6 +9,7 @@ open TG275Checklist.Sql
 open FSharp.Data
 
 open VMS.TPS.Common.Model.API
+open VMS.TPS.Common.Model.Types
 
 module UpdateFunctions =
 
@@ -49,12 +50,16 @@ module UpdateFunctions =
                         Plans = course.PlanSetups 
                                 |> Seq.sortByDescending(fun plan -> match Option.ofNullable plan.CreationDateTime with | Some time -> time | None -> new System.DateTime())
                                 |> Seq.map(fun plan -> 
-                                    // Primary oncologist full display name from database
-                                    use oncoCmd = new SqlCommandProvider<SqlQueries.sqlGetOncologist, SqlQueries.connectionString>(SqlQueries.connectionString)
                                     let oncologist = 
-                                        oncoCmd.Execute(patId = plan.Course.Patient.Id)
-                                        |> Seq.map (fun x -> x.RadOncName.Value)
-                                        |> Seq.head
+                                        // Try to get primary oncologist full display name from database
+                                        match sqlGetOncologist plan.Course.Patient.Id with
+                                        | Error _ -> 
+                                            try $"Rx {plan.RTPrescription.Status} by {plan.RTPrescription.HistoryUserDisplayName}"
+                                            with _ -> 
+                                                try $"RT Plan {plan.ApprovalHistory |> Seq.map(fun x -> x.ApprovalStatus) |> Seq.head} by {plan.ApprovalHistory |> Seq.map(fun x -> x.UserDisplayName) |> Seq.head}"
+                                                with _ ->
+                                                    ""
+                                        | Ok result -> result
                                     match existingCourse with
                                     | None -> 
                                         {

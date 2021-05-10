@@ -5,7 +5,7 @@
 		<UseWpf>true</UseWpf>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<OutputType>WinExe</OutputType>
-		<AssemblyName>Physics-Check</AssemblyName>
+		<AssemblyName>Physics-Check1</AssemblyName>
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
