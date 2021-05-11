@@ -412,23 +412,23 @@ Other Linked Plans: {linkedPlans}")
     let OARTypes = [ "AVOIDANCE"; "CAVITY"; "ORGAN"; "CONTROL"; "DOSE_REGION"; "IRRAD_VOLUME"; "TREATED_VOLUME" ]
     let targetTypes = [ "GTV"; "CTV"; "PTV" ]
 
-    let getBodyStructure (plan:PlanSetup) = 
+    let getBodyStructure (plan: PlanSetup) = 
         plan.StructureSet.Structures
         |> Seq.filter (fun x -> x.DicomType = "BODY" || x.DicomType = "EXTERNAL")
         |> Seq.tryExactlyOne
 
-    let getTargetStructure (plan:PlanSetup) =
+    let getTargetStructure (plan: PlanSetup) =
         plan.StructureSet.Structures
         |> Seq.filter (fun x -> x.Id = plan.TargetVolumeID)
         |> Seq.tryExactlyOne
 
-    let (|ParseLateralityFromInputString|_|) (regex:string) (str:string) =
+    let (|ParseLateralityFromInputString|_|) (regex: string) (str: string) =
         let m = Regex(regex).Match(str.ToUpper())
         if m.Success 
         then Some (match m.Groups.[1].Value with | "L" -> Left | "R" -> Right | _ -> NA)
         else None
 
-    let (|GetLateralityFromStructure|_|) (plan:PlanSetup) (body:Structure) (s:Structure) = 
+    let (|GetLateralityFromStructure|_|) (plan: PlanSetup) (body: Structure) (s: Structure) = 
         let offset = s.CenterPoint.x - body.CenterPoint.x
 
         match plan.TreatmentOrientation with
@@ -438,7 +438,7 @@ Other Linked Plans: {linkedPlans}")
         | PatientOrientation.FeetFirstSupine -> Some (if offset < 0.0 then Right else Left)
         | _ -> None
 
-    let getTargetInfo (plan:PlanSetup) = 
+    let getTargetInfo (plan: PlanSetup) = 
         match getTargetStructure plan with
         | None -> fail "No plan target volume"
         | Some target -> 
@@ -468,7 +468,7 @@ Other Linked Plans: {linkedPlans}")
                 target.Volume
         |> stringOutput
 
-    let checkStructureLaterality (plan:PlanSetup) (name:string) (struc:Structure) =
+    let checkStructureLaterality (plan: PlanSetup) (name: string) (struc: Structure) =
         match getBodyStructure plan with
         | None -> None, None, Some "Single body structure not found, calculation not possible"
         | Some body ->
@@ -479,7 +479,7 @@ Other Linked Plans: {linkedPlans}")
                         | _ -> (None, None, None)
                 | _ -> (None, None, None)
 
-    let getOARInfo (plan:PlanSetup) =
+    let getOARInfo (plan: PlanSetup) =
         let OARTypes = [ "AVOIDANCE"; "CAVITY"; "ORGAN"; "CONTROL"; "DOSE_REGION"; "IRRAD_VOLUME"; "TREATED_VOLUME" ]
     
         plan.StructureSet.Structures |>
@@ -502,7 +502,7 @@ Other Linked Plans: {linkedPlans}")
         |> String.concat "\n"
         |> stringOutput
                         
-    let getBodyInfo (plan:PlanSetup) =
+    let getBodyInfo (plan: PlanSetup) =
         let bodies = 
             plan.StructureSet.Structures
             |> Seq.filter (fun x -> x.DicomType = "BODY" || x.DicomType = "EXTERNAL")
@@ -517,7 +517,7 @@ Other Linked Plans: {linkedPlans}")
         | num -> warn (sprintf "%i body/external structures found (%s)" num (bodies |> Seq.map(fun x -> x.Id) |> String.concat ", "))
         |> stringOutput
             
-    let getHUOverrides (plan:PlanSetup) =
+    let getHUOverrides (plan: PlanSetup) =
         let huOverrides = 
             plan.StructureSet.Structures
             |> Seq.filter (fun x -> x.DicomType <> "SUPPORT")
@@ -533,7 +533,7 @@ Other Linked Plans: {linkedPlans}")
                 |> String.concat "\n")
         |> stringOutput
 
-    let getCouchStructures (plan:PlanSetup) =
+    let getCouchStructures (plan: PlanSetup) =
         plan.StructureSet.Structures
         |> Seq.filter (fun x -> x.DicomType = "SUPPORT")
         |> Seq.map (fun x -> (x, x.GetAssignedHU()))
@@ -541,7 +541,7 @@ Other Linked Plans: {linkedPlans}")
         |> String.concat "\n"
         |> stringOutput
 
-    let getContourApprovals (plan:PlanSetup) =
+    let getContourApprovals (plan: PlanSetup) =
         let approvals =
             plan.StructureSet.Structures
             |> Seq.map (fun x -> 
@@ -584,10 +584,10 @@ Other Linked Plans: {linkedPlans}")
      ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
-    let getCourseAndPlanId (plan:PlanSetup) =   
+    let getCourseAndPlanId (plan: PlanSetup) =   
         stringOutput $"Course: {plan.Course.Id}\nPlan: {plan.Id}"
 
-    let getPlanTechnique (plan:PlanSetup) =
+    let getPlanTechnique (plan: PlanSetup) =
         let list =
             plan.Beams
             |> Seq.filter (fun x -> not x.IsSetupField)
@@ -607,7 +607,7 @@ Other Linked Plans: {linkedPlans}")
             |> String.concat "\n"
         |> stringOutput
 
-    let getDeliverySystem (plan:PlanSetup) =
+    let getDeliverySystem (plan: PlanSetup) =
         let list =
             plan.Beams
             |> Seq.map (fun x -> x.TreatmentUnit)
@@ -623,7 +623,7 @@ Other Linked Plans: {linkedPlans}")
                     |> String.concat "\n")
         |> stringOutput
 
-    let getBeamArrangement (plan:PlanSetup) =
+    let getBeamArrangement (plan: PlanSetup) =
         match Seq.length plan.Beams with
         | 0 -> fail "No fields in plan"
         | _ -> 
@@ -645,7 +645,7 @@ Other Linked Plans: {linkedPlans}")
             |> String.concat "\n"
         |> stringOutput
 
-    let getBeamMUs (plan:PlanSetup) =
+    let getBeamMUs (plan: PlanSetup) =
         match Seq.length plan.Beams with
         | 0 -> fail "No fields in plan"
         | _ -> sprintf "%s\n\nTotal = %0.1f MU\nMU factor = %0.1f"
@@ -661,7 +661,7 @@ Other Linked Plans: {linkedPlans}")
                 |> Seq.sumBy (fun x -> x.Meterset.Value)) / plan.DosePerFraction.Dose)
         |> stringOutput
 
-    let getBeamEnergies (plan:PlanSetup) =
+    let getBeamEnergies (plan: PlanSetup) =
         match Seq.length plan.Beams with
         | 0 -> fail "No fields in plan"
         | _ -> 
@@ -681,7 +681,7 @@ Other Linked Plans: {linkedPlans}")
                 |> String.concat "\n"
         |> stringOutput
 
-    let getBeamDoseRates (plan:PlanSetup) =
+    let getBeamDoseRates (plan: PlanSetup) =
         let list =
             plan.Beams
             |> Seq.filter (fun x -> not x.IsSetupField)
@@ -700,11 +700,11 @@ Other Linked Plans: {linkedPlans}")
                 |> String.concat "\n")
         |> stringOutput
 
-    let getBolusStructures (plan:PlanSetup) =
+    let getBolusStructures (plan: PlanSetup) =
         plan.StructureSet.Structures
         |> Seq.filter (fun x -> x.DicomType = "BOLUS")
 
-    let getBeamBolus (plan:PlanSetup) =
+    let getBeamBolus (plan: PlanSetup) =
         let bolusStructures = plan.StructureSet.Structures |> Seq.filter (fun x -> x.DicomType = "BOLUS")
         let numAttachedToBeams = plan.Beams |> Seq.sumBy(fun x -> Seq.length x.Boluses)
 
@@ -750,7 +750,7 @@ Other Linked Plans: {linkedPlans}")
                         |> String.concat "\n")
         |> stringOutput
 
-    let getCalculationLogs (plan:PlanSetup) =
+    let getCalculationLogs (plan: PlanSetup) =
         let logs = 
             plan.Beams
             |> Seq.filter (fun x -> not x.IsSetupField)
@@ -773,7 +773,7 @@ Other Linked Plans: {linkedPlans}")
         else warn logs
         |> stringOutput
 
-    let getBeamToleranceTables (plan:PlanSetup) =
+    let getBeamToleranceTables (plan: PlanSetup) =
         let list =
             plan.Beams
             |> Seq.map (fun x -> x.ToleranceTableLabel)
@@ -801,7 +801,7 @@ Other Linked Plans: {linkedPlans}")
     | Min
     | Max
 
-    let targetDose constraintType (plan:PlanSetup) = 
+    let targetDose constraintType (plan: PlanSetup) = 
         match getTargetStructure plan with
         | None -> warn "No plan target"
         | Some target -> 
@@ -812,7 +812,7 @@ Other Linked Plans: {linkedPlans}")
             | VolumeAtDose dose -> sprintf "%0.1f%%" (plan.GetVolumeAtDose(target, dose, VolumePresentation.Relative))
     
 
-    let getTargetCoverage (plan:PlanSetup) =
+    let getTargetCoverage (plan: PlanSetup) =
         match getTargetStructure plan with
         | None -> "No plan target"
         | Some target -> 
@@ -832,7 +832,7 @@ Other Linked Plans: {linkedPlans}")
                 (targetDose Max plan)
         |> stringOutput
 
-    let getOARMaxDoses (plan:PlanSetup) =
+    let getOARMaxDoses (plan: PlanSetup) =
         let OARTypes = [ "AVOIDANCE"; "CAVITY"; "ORGAN" ]
     
         sprintf "OARs with max dose > 2 Gy:\n%s"
@@ -844,7 +844,7 @@ Other Linked Plans: {linkedPlans}")
             |> String.concat "\n")
         |> stringOutput
 
-    let getHotspotLocation (plan:PlanSetup) =
+    let getHotspotLocation (plan: PlanSetup) =
         let list =
             plan.StructureSet.Structures
             |> Seq.filter (fun x -> x.DicomType <> "BODY" && x.DicomType <> "EXTERNAL" && (not x.IsEmpty) && x.HasSegment)
@@ -898,16 +898,16 @@ Other Linked Plans: {linkedPlans}")
         | p, s -> $"{p}\n\n{s}"
         |> stringOutput
 
-    let getPlanNormalization (plan:PlanSetup) =
+    let getPlanNormalization (plan: PlanSetup) =
         sprintf "%s%s"
             plan.PlanNormalizationMethod
             (if plan.PlanNormalizationMethod.Contains("Plan Normalization Value:") then "" else sprintf "\nValue: %0.1f%%" plan.PlanNormalizationValue)
         |> stringOutput
 
-    let getCI (body:Structure) (struc:Structure) (plan:PlanSetup) dose =
+    let getCI (body:Structure) (struc:Structure) (plan: PlanSetup) dose =
         plan.GetVolumeAtDose(body, (new DoseValue(dose, DoseValue.DoseUnit.Percent)), VolumePresentation.AbsoluteCm3) / struc.Volume
 
-    let getTargetCIs (plan:PlanSetup) =
+    let getTargetCIs (plan: PlanSetup) =
         match getTargetStructure plan with
         | None -> "No plan target"
         | Some target -> 
@@ -928,14 +928,14 @@ Other Linked Plans: {linkedPlans}")
     | RapidPlan
     | Unknown
 
-    let getAllCalculationOptions name (algorithm:Dictionary<string,string>) =
+    let getAllCalculationOptions name (algorithm: Dictionary<string,string>) =
         sprintf "%s\n%s"
             name
             (algorithm
             |> Seq.map (fun x -> sprintf "%s%s = %s" tab x.Key x.Value)
             |> String.concat "\n")
 
-    let getCalculationAlgorithmInfo (plan:PlanSetup) =
+    let getCalculationAlgorithmInfo (plan: PlanSetup) =
         let techniques = 
             plan.Beams
             |> Seq.filter (fun x -> not x.IsSetupField)
@@ -980,6 +980,64 @@ Other Linked Plans: {linkedPlans}")
         )
         |> Seq.concat
         |> String.concat "\n\n"
+        |> stringOutput
+
+    let getPlanSums (plan: PlanSetup) =
+        let otherPlansInCourse =
+            plan.Course.PlanSetups
+            |> Seq.filter(fun x -> x.Id <> plan.Id)
+            |> Seq.map(fun x -> x.Id)
+
+        let planSums = 
+            plan.Course.Patient.Courses
+            |> Seq.map(fun x -> x.PlanSums)
+            |> Seq.concat
+            |> Seq.filter(fun sum ->
+                sum.PlanSetups
+                |> Seq.filter (fun x -> x.Id = plan.Id && x.Course.Id = plan.Course.Id)
+                |> Seq.length > 0)
+            |> Seq.map(fun sum -> 
+                let plans = 
+                    sum.PlanSetups
+                    |> Seq.map(fun x -> $"{x.Id} ({x.Course.Id})")
+                    |> String.concat $"\n{tab}{tab}"
+                $"{sum.Id} ({sum.Course.Id}):\n{tab}{tab}{plans}")
+
+        if Seq.length planSums = 0
+        then 
+            if Seq.length otherPlansInCourse = 0
+            then "No plan sums containing this plan"
+            else
+                sprintf "Other plans in course:\n%s%s\n%s" 
+                    tab 
+                    (otherPlansInCourse |> String.concat $"\n{tab}") 
+                    (warn "No plan sums containing this plan")
+        else  
+            sprintf "Other plans in course:\n%s%s\nPlan sums containing %s:\n%s%s" 
+                tab 
+                (otherPlansInCourse |> String.concat $"\n{tab}") 
+                plan.Id 
+                tab 
+                (planSums |> String.concat $"\n{tab}")
+        |> stringOutput
+        
+        ///////////////////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////
+      /////////////////// Dose Verification /////////////////////
+     ///////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+
+    let getQaPlans (plan: PlanSetup) =
+        let qas = 
+            plan.Course.Patient.Courses
+            |> Seq.map(fun x -> x.PlanSetups)
+            |> Seq.concat
+            |> Seq.filter(fun p -> p.VerifiedPlan = plan)
+            |> Seq.map(fun x -> $"{x.Id} ({x.Course.Id})")
+
+        if Seq.length qas = 0
+        then "No verification plans have been created for this plan"
+        else sprintf "Verification Plans:\n%s%s" tab (qas |> String.concat $"\n{tab}")
         |> stringOutput
         
         ///////////////////////////////////////////////////////////

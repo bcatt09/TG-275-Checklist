@@ -3,7 +3,7 @@
 open FSharp.Data
 open TG275Checklist.Model.EsapiService
 
-let [<Literal>] private connectionString = "Data Source=10.71.248.60;Initial Catalog=VARIAN;Integrated Security=True"
+let [<Literal>] private connectionString = "Data Source=10.71.248.60;Initial Catalog=VARIAN;User ID=reports;Password=R3p0rtsUs3r"
 
 let [<Literal>] private sqlCmdGetOncologist =
     "SELECT     pt.LastName, pt.FirstName, gpo.AliasName as RadOncName

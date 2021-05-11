@@ -13,7 +13,7 @@ module BaseChecklist =
             "Site and laterality (incl. medical chart to confirm laterality)", None // TODO
             "Prescription vs consult note (e.g. physician report in EMR on plans for treatment)", None
             "Total dose, dose/fractionation, number of fractions", Some getPrescriptionVsPlanDose
-            "Fractionation pattern and regimen (e.g. daily, BID, Quad Shot, regular plan follow by boost, etc.)", Some getPrescriptionVsPlanFractionationPattern // TODO make this a calendar
+            "Fractionation pattern and regimen (e.g. daily, BID, Quad Shot, regular plan follow by boost, etc.)", Some getPrescriptionVsPlanFractionationPattern
             "Energy matches prescription", Some getPrescriptionVsPlanEnergy                                         // TODO matching check
             "Modality (e.g. electrons, photons, protons, etc.)", Some getPrescriptionVsPlanModality
             "Technique (e.g. 3D, IMRT, VMAT, SBRT, etc.) matches prescription", Some getPrescriptionVsPlanTechnique     // TODO lookup table check
@@ -66,7 +66,7 @@ module BaseChecklist =
             "Physics consult (e.g. evaluation of dose to pacemaker, previous treatment, etc.)", None
         ] |> createCategoryChecklist StandardProcedure
 
-    let planQualityChecklist =      // TODO
+    let planQualityChecklist =
         [
             "Target coverage and target planning objectives", Some getTargetCoverage
             "Sparing of OARs and OAR planning objectives", Some getOARMaxDoses
@@ -79,13 +79,13 @@ module BaseChecklist =
             "Plan normalization", Some getPlanNormalization
             "Calculation algorithm and calculation grid size", Some getCalculationAlgorithmInfo
             "Prior Radiation accounted for in plan", None
-            "Plan Sum (e.g. Original plus boost plans)", None       // TODO list all plan sums including this plan
+            "Plan Sum (e.g. Original plus boost plans)", Some getPlanSums
         ] |> createCategoryChecklist PlanQuality
        
     let doseVerificationChecklist =
         [
             "Second calculation check and/or QA performed", None
-            "Verification plan for patient specific QA measurement", None   // TODO
+            "Verification plan for patient specific QA measurement", Some getQaPlans
             "Request for in‐vivo dosimetry", None
         ] |> createCategoryChecklist Verification
         

@@ -154,4 +154,4 @@ module Update =
             
         // Refresh data maybe? TODO: Check if this actually refreshes anything
         | Debugton -> 
-            markAllUnloaded m, Cmd.ofMsg UpdateLoadingState
+            markAllUnloaded m, Cmd.ofMsg DisplayChecklistScreen
