@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
-using static TG275Checklist.Model.EsapiService;
+using static TG275Checklist.Model.HelperDataTypes;
 
 namespace TG275Checklist.Views
 {

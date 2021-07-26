@@ -26,7 +26,7 @@ module BaseChecklist =
         [
             "Physician directive for imaging technique, setup and immobilization (this may include: contrast, scanning orientation, immobilization device, etc.)", None
             "Description of target location on physician planning directive (e.g. RUL Lung, H&N, L1‐L4)", None
-            "Patient set up, positioning and immobilization*: (a) Appropriate for site and/or per clinical standard procedures, (b) Written or photographic documentation of patient positioning, immobilization and ancillary devices, including setup note", None
+            $"Patient set up, positioning and immobilization*: \n{tab}(a) Appropriate for site and/or per clinical standard procedures\n{tab}(b) Written or photographic documentation of patient positioning, immobilization and ancillary devices, including setup note", Some getSetupNotes
             "Image quality and usability: CT Scan Artifacts, Scan sup/inf Range Includes Enough Data, Scan FOV encompasses all required information, Use of Contrast", None
             "Motion management: (a) MD directive, (b) breath‐hold parameters, (c) gating parameters, (d) 4D‐CT parameters and data set", None
             "Registration/Fusion of image sets (CT, PET, MRI, etc.)", None                                  // TODO
@@ -38,7 +38,7 @@ module BaseChecklist =
         [
             "Target(s)* ‐ e.g. discernible errors, missing slices, mislabeling, gross anatomical deviations.", Some getTargetInfo
             "Organs‐at‐risk (OAR's)", Some getOARInfo
-            "PTV and OAR Margin ‐ as specified in the chart and/or per protocol", None      // TODO
+            "PTV and OAR Margin ‐ as specified in the chart and/or per protocol", None //Some StructureChecks.testMargins      // TODO
             "Body/External contour", Some getBodyInfo
             "Density overrides applied as needed (ex. High‐Z material, contrast, artifacts, etc.)", Some getHUOverrides
             "Consideration of Supporting Structures (i.e. couch, immobilization and ancillary devices, etc.)", Some getCouchStructures
@@ -103,7 +103,7 @@ module BaseChecklist =
             "Reference CT", None
             "Isocenter on reference image(s), 2D or 3D", None
             "DRR association", None
-            "DRR image quality", None
+            "DRR image quality", None //Some DrrTest
             "Imaging technique", None
             "Imaging regimen (e.g. daily, weekly, daily followed by weekly, etc.)", None
             "Parameters and setup for specialized devices (e.g. ExacTrac, VisionRT, RPM, etc.)", None

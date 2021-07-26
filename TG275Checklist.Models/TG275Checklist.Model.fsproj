@@ -1,8 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework> 
-
-    <GenerateDocumentationFile>true</GenerateDocumentationFile> 
 
     <Platforms>AnyCPU;x64</Platforms> 
 
@@ -11,14 +9,21 @@
 
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
+    <None Include="SQL Queries\OncologistName.sql" />
+    <None Include="SQL Queries\OncologistUserId.sql" />
+    <None Include="SQL Queries\PrescribedFrequency.sql" />
+    <None Include="SQL Queries\ScheduledActivities.sql" />
+    <None Include="SQL Queries\SetupNotes.sql" />
     <Compile Include="Log.fs" />
     <Compile Include="CommonTypes.fs" />
+    <Compile Include="HelperDataTypes.fs" />
     <Compile Include="EsapiService.fs" />
     <Compile Include="SqlQueries.fs" />
     <Compile Include="PatientSetupTypes.fs" />
     <Compile Include="ChecklistTypes.fs" />
     <Compile Include="ChecklistFunctions.fs" />
     <Compile Include="EsapiCalls.fs" />
+    <Compile Include="StructureChecks.fs" />
     <Compile Include="BaseChecklist.fs" />
     <Compile Include="Model.fs" />
     <Compile Include="UpdateFunctions.fs" />
@@ -26,12 +31,13 @@
     <Compile Include="Bindings.fs" />
   </ItemGroup>
 
+  <ItemGroup />
+
   <ItemGroup>
     <PackageReference Include="Costura.Fody" Version="4.1.0" />
     <PackageReference Include="Elmish.WPF" Version="3.5.6" />
     <PackageReference Include="FSharp.Data" Version="4.1.0" />
     <PackageReference Include="FSharp.Data.SqlClient" Version="2.0.7" />
-    <PackageReference Include="FSharp.Data.TypeProviders" Version="5.0.0.6" />
     <PackageReference Include="NLog" Version="4.7.6" />
     <PackageReference Include="ParallelExtensionsExtras" Version="1.2.0" />
   </ItemGroup>

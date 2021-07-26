@@ -152,7 +152,9 @@ Other Linked Plans: {linkedPlans}")
         | Error rxErr, Ok plan -> prescriptionVsPlanOutput $"{fail rxErr}" $"{plan.Status} by {plan.DisplayName} ({plan.Id}) at {plan.DateTime}"
         | Error rxErr, Error planErr -> prescriptionVsPlanOutput $"{fail rxErr}" $"{fail planErr}"
 
-    /// <summary>Gets Prescription and Plan Dose info and highlights based on their equivalence</summary>
+    /// <summary>
+    /// Gets Prescription and Plan Dose info and highlights based on their equivalence
+    /// </summary>
     let getPrescriptionVsPlanDose (plan: PlanSetup) =
         let rx = plan.RTPrescription
         let rxDoseInfo = 
@@ -368,6 +370,27 @@ Other Linked Plans: {linkedPlans}")
       ////////////////////// Simulation /////////////////////////
      ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
+
+    let getListOfSetupNotes (plan: PlanSetup) =
+        let setupNotes = sqlGetSetupNotes plan.Course.Patient.Id plan.Course.Id plan.Id
+        match setupNotes with
+        | Error error -> $"Error getting Treatment Activities from database: {fail error}"
+        | Ok notes ->
+            let list = 
+                notes
+                |> Seq.filter(fun x -> x.setupNote.IsSome)
+                |> Seq.map(fun x -> $"{tab}{x.fieldId}:\n{x.setupNote.Value}")
+                |> Seq.map(fun x -> x.Replace("\n", $"\n{tab}{tab}"))
+            if Seq.length list = 0
+            then "No setup notes found"
+            else 
+                list
+                |> Seq.append (Seq.singleton "Setup Notes:")
+                |> String.concat "\n"
+
+    let getSetupNotes (plan: PlanSetup) =
+        getListOfSetupNotes plan
+        |> stringOutput
 
     let getPatientOrientations (plan: PlanSetup) =
         let tx = plan.TreatmentOrientation
@@ -1032,7 +1055,7 @@ Other Linked Plans: {linkedPlans}")
             plan.Course.Patient.Courses
             |> Seq.map(fun x -> x.PlanSetups)
             |> Seq.concat
-            |> Seq.filter(fun p -> p.VerifiedPlan = plan)
+            |> Seq.filter(fun p -> try p.VerifiedPlan = plan with _ -> false)   // PlanSetup.get_VerifiedPlan() could throw exception if the Verified Plan has been deleted
             |> Seq.map(fun x -> $"{x.Id} ({x.Course.Id})")
 
         if Seq.length qas = 0
@@ -1076,28 +1099,33 @@ Other Linked Plans: {linkedPlans}")
 
         let isos = getIsocenters plan
 
-        shiftFromList
-        |> Seq.sortBy (fun x -> if (fst x) = "User Origin" then "zzzzzzz" else (fst x)) // If User Origin is in same location as a marker we want to chose the marker
-        |> Seq.distinctBy (fun x -> snd x)
-        |> Seq.map(fun pt -> 
-            // Point to calc shifts from
-            sprintf "Shifts from %s: (%.2f, %.2f, %.2f)%s" 
-                (warn (fst pt)) (snd pt).x (snd pt).y (snd pt).z
-                (isos
-                |> Seq.map(fun iso -> 
-                    let shift = (iso - (snd pt)) / 10.0
-                    if shift.Length < 0.05
-                    then sprintf "\n%sNo shifts" tab
-                    else
-                        sprintf "%s%s%s" 
-                            (if shift.x > 0.1 then sprintf "\n%sPatient left: %.1f cm" tab shift.x      else if shift.x < -0.1 then sprintf "\n%sPatient right: %.1f cm" tab -shift.x    else "")
-                            (if shift.z > 0.1 then sprintf "\n%sPatient superior: %.1f cm" tab shift.z  else if shift.z < -0.1 then sprintf "\n%sPatient inferior: %.1f cm" tab -shift.z else "")
-                            (if shift.y > 0.1 then sprintf "\n%sPatient posterior: %.1f cm" tab shift.y else if shift.y < -0.1 then sprintf "\n%sPatient anterior: %.1f cm" tab -shift.y else "")
-                )
-                |> String.concat "\n") 
-        )
-        |> String.concat "\n"
-        |> stringOutput
+        let isocenterShifts =
+            shiftFromList
+            |> Seq.sortBy (fun x -> if (fst x) = "User Origin" then "zzzzzzz" else (fst x)) // If User Origin is in same location as a marker we want to chose the marker
+            |> Seq.distinctBy (fun x -> snd x)
+            |> Seq.map(fun pt -> 
+                // Point to calc shifts from
+                sprintf "Shifts from %s: (%.2f, %.2f, %.2f)%s" 
+                    (warn (fst pt)) 
+                    (((snd pt).x - plan.StructureSet.Image.UserOrigin.x) / 10.0)
+                    (((snd pt).y - plan.StructureSet.Image.UserOrigin.y) / 10.0)
+                    (((snd pt).z - plan.StructureSet.Image.UserOrigin.z) / 10.0)
+                    (isos
+                    |> Seq.map(fun iso -> 
+                        let shift = (iso - (snd pt)) / 10.0
+                        if shift.Length < 0.05
+                        then sprintf "\n%sNo shifts" tab
+                        else
+                            sprintf "%s%s%s" 
+                                (if shift.x > 0.1 then sprintf "\n%sPatient left: %.1f cm" tab shift.x      else if shift.x < -0.1 then sprintf "\n%sPatient right: %.1f cm" tab -shift.x    else "")
+                                (if shift.z > 0.1 then sprintf "\n%sPatient superior: %.1f cm" tab shift.z  else if shift.z < -0.1 then sprintf "\n%sPatient inferior: %.1f cm" tab -shift.z else "")
+                                (if shift.y > 0.1 then sprintf "\n%sPatient posterior: %.1f cm" tab shift.y else if shift.y < -0.1 then sprintf "\n%sPatient anterior: %.1f cm" tab -shift.y else ""))
+                    |> String.concat "\n"))
+            |> String.concat "\n"
+        
+        let setupShifts = getListOfSetupNotes plan
+
+        $"{isocenterShifts}\n\n{setupShifts}" |> stringOutput
 
     let getNumberOfIsocenters (plan:PlanSetup) =
         let num = 
@@ -1111,6 +1139,19 @@ Other Linked Plans: {linkedPlans}")
         | 1 -> pass "1 isocenter"
         | 0 -> warn "No isocenters found (No beams in the plan?)"
         | _ -> fail "Error"
+        |> stringOutput
+        
+        ///////////////////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////
+      ///////////////// Image Guidance Checks ///////////////////
+     ///////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+
+    let DrrTest (plan: PlanSetup) =
+        plan.Beams
+        |> Seq.filter (fun x -> not x.IsSetupField)
+        |> Seq.map (fun x -> $"{x.Id} - {x.ReferenceImage.Id}")
+        |> String.concat "\n"
         |> stringOutput
         
         ///////////////////////////////////////////////////////////
