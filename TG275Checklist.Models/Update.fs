@@ -7,7 +7,7 @@ open Model
 open PatientSetupTypes
 open ChecklistTypes
 open ChecklistFunctions
-open BaseChecklist
+open PlanChecklist
 open UpdateFunctions
 
 open type System.Windows.Visibility
@@ -143,7 +143,7 @@ module Update =
                 | -1 -> log.Error(ex, func)
                 | i -> log.Error(ex, func.Substring(i+1))
             | None -> ()
-            let failedResult = { EsapiResults.init with Text = EsapiCalls.fail "Error processing results"}
+            let failedResult = { EsapiResults.init with Text = TG275Checklist.EsapiCalls.CommonHelpers.fail "Error processing results"}
             (m |> updateModelWithLoadedEsapiResults (Some failedResult)), Cmd.ofMsg UpdateLoadingState
         | LoadingComplete ->
             { m with StatusBar = StatusBar.ready }, Cmd.none

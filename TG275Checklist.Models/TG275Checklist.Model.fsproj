@@ -22,16 +22,23 @@
     <Compile Include="PatientSetupTypes.fs" />
     <Compile Include="ChecklistTypes.fs" />
     <Compile Include="ChecklistFunctions.fs" />
-    <Compile Include="EsapiCalls.fs" />
-    <Compile Include="StructureChecks.fs" />
-    <Compile Include="BaseChecklist.fs" />
+    <Compile Include="Esapi Calls\CommonHelpers.fs" />
+    <Compile Include="Esapi Calls\Prescription.fs" />
+    <Compile Include="Esapi Calls\Simulation.fs" />
+    <Compile Include="Esapi Calls\Contouring.fs" />
+    <Compile Include="Esapi Calls\StandardPractices.fs" />
+    <Compile Include="Esapi Calls\DoseDistributionAndPlanQuality.fs" />
+    <Compile Include="Esapi Calls\DoseVerification.fs" />
+    <Compile Include="Esapi Calls\Isocenter.fs" />
+    <Compile Include="Esapi Calls\ImageGuidance.fs" />
+    <Compile Include="Esapi Calls\Scheduling.fs" />
+    <Compile Include="StructureChecksTESTING.fs" />
+    <Compile Include="PlanChecklist.fs" />
     <Compile Include="Model.fs" />
     <Compile Include="UpdateFunctions.fs" />
     <Compile Include="Update.fs" />
     <Compile Include="Bindings.fs" />
   </ItemGroup>
-
-  <ItemGroup />
 
   <ItemGroup>
     <PackageReference Include="Costura.Fody" Version="4.1.0" />

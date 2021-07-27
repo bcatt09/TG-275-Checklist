@@ -39,7 +39,7 @@ module Program =
 
         // Arguments sent from Eclipse to the standalone application in friendly form to be passed to the model
         let standaloneArgs = 
-            let tempArgs = if args.Length = 0 then [|"4703528"; "1 SACRUM\\SACRUM_2"|] else args  // Use a known patient if args are blank (launched outside of Eclipse)
+            let tempArgs = if args.Length = 0 then [|"4703528"; "1 SACRUM\\SACRUM_2"|] else args  // Use a known patient if args are blank (launched outside of Eclipse for testing)
             {
                 PatientID = tempArgs.[0];
                 Courses = courses;

@@ -2,9 +2,19 @@
 
 open ChecklistTypes
 open ChecklistFunctions
-open EsapiCalls
 
-module BaseChecklist = 
+open TG275Checklist.EsapiCalls.CommonHelpers
+open TG275Checklist.EsapiCalls.Prescription
+open TG275Checklist.EsapiCalls.Simulation
+open TG275Checklist.EsapiCalls.Contouring
+open TG275Checklist.EsapiCalls.StandardPractices
+open TG275Checklist.EsapiCalls.DoseDistributionAndPlanQuality
+open TG275Checklist.EsapiCalls.DoseVerification
+open TG275Checklist.EsapiCalls.Isocenter
+open TG275Checklist.EsapiCalls.ImageGuidance
+open TG275Checklist.EsapiCalls.Scheduling
+
+module PlanChecklist = 
 
     let prescriptionChecklist =
         [
