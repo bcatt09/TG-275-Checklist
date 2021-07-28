@@ -64,6 +64,10 @@ namespace TG275Checklist.Views
                             var warn = new Run(content);
                             warn.Foreground = System.Windows.Media.Brushes.Khaki;
                             return warn;
+                        case "<HIGHLIGHT>":
+                            var highlight = new Run(content);
+                            highlight.Foreground = System.Windows.Media.Brushes.MediumOrchid;
+                            return highlight;
                         case "<BOLD>":
                             return new Bold(Traverse(content));
                         case "<ITALIC>":

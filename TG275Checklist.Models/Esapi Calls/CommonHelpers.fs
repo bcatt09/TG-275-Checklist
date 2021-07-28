@@ -6,27 +6,53 @@ open System.Globalization
 open TG275Checklist.Model
 open TG275Checklist.Sql
 
+[<AutoOpen>]
 module CommonHelpers =
+    
+    type EsapiCall = PlanSetup -> EsapiResults
 
     let tab = "    "
 
-    let passingTags = "<Pass>", "</Pass>"
-    let failingTags = "<Fail>", "</Fail>"
-    let warningTags = "<Warn>", "</Warn>"
+    // Validated Text
+    let private passingTags = "<Pass>", "</Pass>"
+    let private failingTags = "<Fail>", "</Fail>"
+    let private warningTags = "<Warn>", "</Warn>"
+    let private highlightTags = "<Highlight>", "</Highlight>"
 
-    let tagString (tag: string * string) text =
+    let private tagString (tag: string * string) text =
         $"{fst tag}{text}{snd tag}"
 
-    let pass text = tagString passingTags text
-    let fail text = tagString failingTags text
-    let warn text = tagString warningTags text
+    let private pass text = tagString passingTags text
+    let private fail text = tagString failingTags text
+    let private warn text = tagString warningTags text
+    let private highlight text = tagString highlightTags text
 
-    let getPassFail condition = if condition then pass else fail
-    let getPassWarn condition = if condition then pass else warn
-    let getPassId condition = if condition then pass else id
-    let getIdWarn condition = if condition then id else warn
+    type ValidationResult =
+        | Pass
+        | Warn of string
+        | WarnWithoutExplanation
+        | Fail of string
+        | Highlight
+        | Id
 
-    let stringOutput text = { EsapiResults.init with Text = text }
+    type ValidatedText(result: ValidationResult, object) =
+        member this.Result = result
+        member this.Object = object
+        override this.ToString() =
+                match this.Result with
+                | Pass -> pass this.Object
+                | Warn reason -> warn $"{this.Object} ({reason})"
+                | WarnWithoutExplanation -> warn this.Object
+                | Fail reason -> fail $"{this.Object} ({reason})"
+                | Highlight -> highlight this.Object
+                | Id -> this.Object.ToString()
+
+    let getPassFail failureReason condition = if condition then Pass else Fail failureReason
+    let getPassWarn warningReason condition = if condition then Pass else Warn warningReason
+    let getPassWarnWithoutExplanation condition = if condition then Pass else WarnWithoutExplanation
+    let getPassId condition = if condition then Pass else Id
+    let getIdWarn warningReason condition = if condition then Id else Warn warningReason
+    let getIdWarnWithoutExplanation  condition = if condition then Id else WarnWithoutExplanation
 
     let toTitleCase (text: string) =
         CultureInfo("en-US").TextInfo.ToTitleCase(text.ToLower())
@@ -34,7 +60,7 @@ module CommonHelpers =
     type laterality =
     | Right
     | Left
-    | NA
+    | NoLaterality
 
     let OARTypes = [ "AVOIDANCE"; "CAVITY"; "ORGAN"; "CONTROL"; "DOSE_REGION"; "IRRAD_VOLUME"; "TREATED_VOLUME" ]
     let targetTypes = [ "GTV"; "CTV"; "PTV" ]
@@ -49,16 +75,20 @@ module CommonHelpers =
         |> Seq.filter (fun x -> x.Id = plan.TargetVolumeID)
         |> Seq.tryExactlyOne
 
-    let getListOfSetupNotes (plan: PlanSetup) =
+    let getSetupNotesAsList (plan: PlanSetup) =
         let setupNotes = sqlGetSetupNotes plan.Course.Patient.Id plan.Course.Id plan.Id
         match setupNotes with
-        | Error error -> $"Error getting Treatment Activities from database: {fail error}"
+        | Error error -> Error error
         | Ok notes ->
-            let list = 
-                notes
-                |> Seq.filter(fun x -> x.setupNote.IsSome)
-                |> Seq.map(fun x -> $"{tab}{x.fieldId}:\n{x.setupNote.Value}")
-                |> Seq.map(fun x -> x.Replace("\n", $"\n{tab}{tab}"))
+            Ok (notes
+            |> Seq.filter(fun x -> x.setupNote.IsSome)
+            |> Seq.map(fun x -> $"{tab}{x.fieldId}:\n{x.setupNote.Value}")
+            |> Seq.map(fun x -> x.Replace("\n", $"\n{tab}{tab}")))
+
+    let getSetupNotesAsString (plan: PlanSetup) =
+        match getSetupNotesAsList plan with
+        | Error error -> $"Error getting Se from database: {fail error}"
+        | Ok list ->
             if Seq.length list = 0
             then "No setup notes found"
             else 
@@ -72,6 +102,6 @@ module CommonHelpers =
         System.Threading.Thread.Sleep(3000)
         let badExample = "BAD"
         let goodExample = "Good"
-        stringOutput $"{plan.TotalDose} {fail badExample} dose/{pass goodExample} dose"
+        EsapiResults.fromString $"{plan.TotalDose} {fail badExample} dose/{pass goodExample} dose"
     let badTestFunction (plan: PlanSetup) =
         failwith "this has been a test of the emergency broadcast system"

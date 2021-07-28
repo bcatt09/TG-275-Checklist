@@ -2,10 +2,11 @@
 
 open VMS.TPS.Common.Model.API
 open CommonHelpers
+open TG275Checklist.Model.EsapiService
 
 module Scheduling =
 
-    let getPlanScheduling (plan:PlanSetup) =
+    let getPlanScheduling: EsapiCall = fun plan ->
         let overlappingSessions = 
             plan.TreatmentSessions
             |> Seq.map (fun session -> 
@@ -21,12 +22,14 @@ module Scheduling =
             if Seq.length overlappingSessions > 0
                 then
                     overlappingSessions 
-                    |> Seq.map (fun x -> warn $"\n{(fst (fst x)).Id} is scheduled with {(snd (fst x)).Id} for {snd x} sessions.  ")
+                    |> Seq.map (fun x -> ValidatedText(WarnWithoutExplanation, $"\n{(fst (fst x)).Id} is scheduled with {(snd (fst x)).Id} for {snd x} sessions.  ").ToString())
                     |> Seq.map (fun x -> x + "Please check Plan Scheduling for more info")
                     |> String.concat ""
                 else ""
 
         let numSessionsText = $"{numSessions} sessions"
 
-        stringOutput $"{getPassWarn (numSessions = plan.NumberOfFractions.GetValueOrDefault()) numSessionsText} scheduled for treatment {overlappingSessionsText}"
+        let numSessionsResult = getPassWarn "Scheduled activities doesn't equal planned fractions" (numSessions = plan.NumberOfFractions.GetValueOrDefault())
+
+        EsapiResults.fromString $"{ValidatedText(numSessionsResult, numSessionsText)} scheduled for treatment {overlappingSessionsText}"
 

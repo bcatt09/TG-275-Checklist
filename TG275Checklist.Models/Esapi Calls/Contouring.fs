@@ -5,13 +5,14 @@ open TG275Checklist.Sql
 open VMS.TPS.Common.Model.API
 open VMS.TPS.Common.Model.Types
 open CommonHelpers
+open TG275Checklist.Model.EsapiService
 
 module Contouring =
 
     let (|ParseLateralityFromInputString|_|) (regex: string) (str: string) =
         let m = Regex(regex).Match(str.ToUpper())
         if m.Success 
-        then Some (match m.Groups.[1].Value with | "L" -> Left | "R" -> Right | _ -> NA)
+        then Some (match m.Groups.[1].Value with | "L" -> Left | "R" -> Right | _ -> NoLaterality)
         else None
 
     let (|GetLateralityFromStructure|_|) (plan: PlanSetup) (body: Structure) (s: Structure) = 
@@ -24,39 +25,39 @@ module Contouring =
         | PatientOrientation.FeetFirstSupine -> Some (if offset < 0.0 then Right else Left)
         | _ -> None
 
-    let getTargetInfo (plan: PlanSetup) = 
+    let getTargetInfo: EsapiCall = fun plan ->
         match getTargetStructure plan with
-        | None -> fail "No plan target volume"
+        | None -> ValidatedText(WarnWithoutExplanation, "No plan target volume").ToString()
         | Some target -> 
             let targetLateralityText =
                 match getBodyStructure plan with
-                | None -> fail "Single body structure not found, calculation not possible"
+                | None -> ValidatedText(Warn "Lateralitty calculation not possible", "Single body structure not found").ToString()
                 | Some body -> 
                     match plan.Id with
                         | ParseLateralityFromInputString @"^(L|R)T?( |_)" planLaterality -> 
                                 match target with
                                 | GetLateralityFromStructure plan body targetLaterality ->
                                     if planLaterality = targetLaterality
-                                    then sprintf "Plan and target agree (%s)" (pass planLaterality)
-                                    else sprintf "%s\nPlan is named for %s\nPlan target is on the %s side of %s" (warn "Mismatch") (fail planLaterality) (fail targetLaterality) body.Id
-                                | _ -> sprintf "%s: %A" (warn "Patient orientation not supported") plan.TreatmentOrientation
+                                    then $"Plan and target agree: ({ValidatedText(Pass, planLaterality.ToString())})"
+                                    else $"""{ValidatedText(WarnWithoutExplanation, "Mismatch")}{'\n'}Plan is named for {ValidatedText(WarnWithoutExplanation, planLaterality)}{'\n'}Plan target is on the {ValidatedText(WarnWithoutExplanation, targetLaterality)} side of {body.Id}"""
+                                | _ -> ValidatedText(Warn "Patient orientation not supported", plan.TreatmentOrientation).ToString()
                         | _ -> sprintf "None specified"
 
-            sprintf "Target: %s\n%s# of pieces: %s\n%sLaterality: %s\n%sVolume: %0.2f cc"
+            sprintf "Target: %s\n%s# of pieces: %A\n%sLaterality: %s\n%sVolume: %0.2f cc"
                 plan.TargetVolumeID
                 tab
                 (match target.GetNumberOfSeparateParts() with
-                | 1 -> pass "1 piece"
-                | n -> warn $"{n} pieces")
+                | 1 -> ValidatedText(Pass, "1 piece")
+                | n -> ValidatedText(WarnWithoutExplanation, $"{n} pieces"))
                 tab
                 targetLateralityText
                 tab
                 target.Volume
-        |> stringOutput
+        |> EsapiResults.fromString
 
     let checkStructureLaterality (plan: PlanSetup) (name: string) (struc: Structure) =
         match getBodyStructure plan with
-        | None -> None, None, Some "Single body structure not found, calculation not possible"
+        | None -> None, None, Some (ValidatedText(Warn "Single body structure not found", "Structure laterality calculation not possible"))
         | Some body ->
             match name with
                 | ParseLateralityFromInputString @"_(R|L)T?( |_)?" nameLaterality -> 
@@ -65,7 +66,7 @@ module Contouring =
                         | _ -> (None, None, None)
                 | _ -> (None, None, None)
 
-    let getOARInfo (plan: PlanSetup) =
+    let getOARInfo: EsapiCall = fun plan ->
         let OARTypes = [ "AVOIDANCE"; "CAVITY"; "ORGAN"; "CONTROL"; "DOSE_REGION"; "IRRAD_VOLUME"; "TREATED_VOLUME" ]
     
         plan.StructureSet.Structures |>
@@ -76,34 +77,34 @@ module Contouring =
                 x.Volume
                 (match x.GetNumberOfSeparateParts() with
                     | 1 -> ""
-                    | pieces -> sprintf "\n%s %s" tab (warn $"{pieces} pieces"))
+                    | pieces -> $"""{'\n'}{tab} {ValidatedText(WarnWithoutExplanation, $"{pieces} pieces")}""")
                 (match checkStructureLaterality plan x.Id x with
-                    | _, _, Some error -> warn error
+                    | _, _, Some error -> error.ToString()
                     | None, _, None -> ""
                     | Some namedLat, Some strucLat, None -> 
                         if namedLat = strucLat
-                        then sprintf "\n%sLaterality matches (%s)" tab (pass namedLat)
-                        else sprintf "\n%s%s - %s is on the %A" tab (warn "Mismatch") x.Id strucLat
-                    | _ -> sprintf "\n%s%s" tab (fail "Error calculating structure laterality (hopefully due to patient orientation)"))) 
+                        then $"\n{tab}Laterality matches ({ValidatedText(Pass, namedLat)})"
+                        else $"""{'\n'}{tab}{ValidatedText(Warn "laterality mismatch", $"{x.Id} is on the {strucLat}")}"""
+                    | _ -> $"""{'\n'}{tab}{ValidatedText(Warn "hopefully due to patient orientation", "Error calculating structure laterality")}""")) 
         |> String.concat "\n"
-        |> stringOutput
+        |> EsapiResults.fromString
                         
-    let getBodyInfo (plan: PlanSetup) =
+    let getBodyInfo: EsapiCall = fun plan ->
         let bodies = 
             plan.StructureSet.Structures
             |> Seq.filter (fun x -> x.DicomType = "BODY" || x.DicomType = "EXTERNAL")
 
         match bodies |> Seq.length with
-        | 0 -> fail "No body/external structures found"
+        | 0 -> ValidatedText(Fail "No body/external structures found", "Error").ToString()
         | 1 -> 
             let body = bodies |> Seq.exactlyOne
             match body.GetNumberOfSeparateParts() with
-            | 1 -> sprintf "%s:\n%s# of pieces: %s" body.Id tab (pass "1 piece")
-            | num -> sprintf "%s:\n%s# of pieces: %s" body.Id tab (warn $"{num} pieces")
-        | num -> warn (sprintf "%i body/external structures found (%s)" num (bodies |> Seq.map(fun x -> x.Id) |> String.concat ", "))
-        |> stringOutput
+            | 1 -> $"""{body.Id}:{'\n'}{tab}# of pieces: {ValidatedText(Pass, "1 piece")}"""
+            | num -> $"""{body.Id}:{'\n'}{tab}# of pieces: {ValidatedText(WarnWithoutExplanation, $"{num} piece")}"""
+        | num -> ValidatedText(WarnWithoutExplanation, (sprintf "%i body/external structures found (%s)" num (bodies |> Seq.map(fun x -> x.Id) |> String.concat ", "))).ToString()
+        |> EsapiResults.fromString
             
-    let getHUOverrides (plan: PlanSetup) =
+    let getHUOverrides: EsapiCall = fun plan ->
         let huOverrides = 
             plan.StructureSet.Structures
             |> Seq.filter (fun x -> x.DicomType <> "SUPPORT")
@@ -113,21 +114,21 @@ module Contouring =
         if Seq.isEmpty huOverrides
         then "No HU overrides"
         else
-            warn
+            ValidatedText(WarnWithoutExplanation,
                 (huOverrides
                 |> Seq.map (fun x -> sprintf "%s (%0.1f HU)" (fst x).Id (snd(snd x)))
-                |> String.concat "\n")
-        |> stringOutput
+                |> String.concat "\n")).ToString()
+        |> EsapiResults.fromString
 
-    let getCouchStructures (plan: PlanSetup) =
+    let getCouchStructures: EsapiCall = fun plan ->
         plan.StructureSet.Structures
         |> Seq.filter (fun x -> x.DicomType = "SUPPORT")
         |> Seq.map (fun x -> (x, x.GetAssignedHU()))
         |> Seq.map (fun x -> sprintf "%s (%0.1f HU)" (fst x).Id (snd(snd x)))
         |> String.concat "\n"
-        |> stringOutput
+        |> EsapiResults.fromString
 
-    let getContourApprovals (plan: PlanSetup) =
+    let getContourApprovals: EsapiCall = fun plan ->
         let approvals =
             plan.StructureSet.Structures
             |> Seq.map (fun x -> 
@@ -149,17 +150,17 @@ module Contouring =
             let result =
                 // Primary oncologist user ID from database
                 match sqlGetOncologistUserId plan.Course.Patient.Id with
-                | Error _ -> id
-                | Ok oncologistUserId -> getPassWarn (approval.UserId = oncologistUserId)    // Check if each structure has been approved by the primary oncologist
-            $"All contours approved by {result approval.UserDisplayName} ({approval.UserId})"
+                | Error error -> Id
+                | Ok oncologistUserId -> getPassWarn "Structure not approved by primary oncologist" (approval.UserId = oncologistUserId)    // Check if each structure has been approved by the primary oncologist
+            $"All contours approved by {ValidatedText(result, approval.UserDisplayName)} ({approval.UserId})"
         else
             approvals
             |> Seq.map (fun x -> 
                 let result = 
                     // Primary oncologist user ID from database
                     match sqlGetOncologistUserId plan.Course.Patient.Id with
-                    | Error _ -> id
-                    | Ok oncologistUserId -> getIdWarn ((snd x).UserId = oncologistUserId)   // Check if structures have been approved by the primary oncologist
-                sprintf "%s approved by %s (%s) at %A" (fst x) (result (snd x).UserDisplayName) (snd x).UserId (snd x).ApprovalDateTime)
+                    | Error _ -> Id
+                    | Ok oncologistUserId -> getIdWarn "Structure not approves by primary oncologist" ((snd x).UserId = oncologistUserId)   // Check if structures have been approved by the primary oncologist
+                sprintf "%s approved by %A (%s) at %A" (fst x) (ValidatedText(result, (snd x).UserDisplayName)) (snd x).UserId (snd x).ApprovalDateTime)
             |> String.concat "\n"
-        |> stringOutput
+        |> EsapiResults.fromString

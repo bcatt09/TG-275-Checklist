@@ -5,15 +5,16 @@ open TG275Checklist.Sql
 open VMS.TPS.Common.Model.API
 open VMS.TPS.Common.Model.Types
 open CommonHelpers
+open TG275Checklist.Model.EsapiService
 
 module Prescription =
 
     let checkForPrescription (rx: RTPrescription) predicate =
         if isNull rx
-        then Error "No prescription linked to plan"
+        then Error (ValidatedText(Fail "No prescription linked to plan", "Error"))
         else Ok predicate
 
-    let prescriptionVsPlanOutput rx plan = stringOutput $"Prescription:\n{tab}{rx}\nPlan:\n{tab}{plan}"
+    let prescriptionVsPlanOutput rx plan = EsapiResults.fromString $"Prescription:\n{tab}{rx}\nPlan:\n{tab}{plan}"
 
     let (|Photon|Electron|Unknown|) (energy: string) =
         if energy.Contains("X") then Photon
@@ -26,35 +27,35 @@ module Prescription =
     /// <summary>
     /// Gets all Prescription fields from ESAPI and highlights the revision number
     /// </summary>
-    let getFullPrescription (plan: PlanSetup) =
+    let getFullPrescription: EsapiCall = fun plan ->
         match plan.RTPrescription with
-        | null -> stringOutput (fail "No prescription attached to plan")
+        | null -> EsapiResults.fromString (ValidatedText(Fail "No prescription attached to plan", "Error").ToString())
         | rx ->
             let revision = 
                 if rx.RevisionNumber > 0 
-                then fail $"\nRevision number: {rx.RevisionNumber}\nLatest Revision: {rx.LatestRevision.Name}" 
-                else " - " + pass "Latest revision"
+                then ValidatedText(WarnWithoutExplanation, $"\nRevision number: {rx.RevisionNumber}\nLatest Revision: {rx.LatestRevision.Name}").ToString()
+                else $""" - {ValidatedText(Pass, $"Revision number: {rx.RevisionNumber} (Latest)")}"""
             let targets =
                 rx.Targets
                 |> Seq.map (fun targ -> $"{targ.TargetId}: {targ.DosePerFraction * float targ.NumberOfFractions} = {targ.DosePerFraction} x {targ.NumberOfFractions} Fx")
                 |> String.concat $"\n{tab}"
             let modes = rx.EnergyModes |> Seq.map (fun x -> toTitleCase x) |> String.concat ", "
             let energies = rx.Energies |> String.concat ", "
-            let gating = if rx.Gating = "" then "None" else warn rx.Gating
-            let bolus = if rx.BolusThickness = "" then "None" else warn $"{rx.BolusThickness} {rx.BolusFrequency.ToLower()}"
+            let gating = ValidatedText(getIdWarnWithoutExplanation (rx.Gating = ""), match rx.Gating with | "" -> "None" | _ -> rx.Gating)
+            let bolus = ValidatedText(getIdWarnWithoutExplanation (rx.BolusThickness = ""), match rx.BolusThickness with | "" -> "None" | _ -> $"{rx.BolusThickness} {rx.BolusFrequency.ToLower()}")
             let otherLinkedPlans = 
                 plan.Course.PlanSetups 
                 |> Seq.filter (fun p -> p.RTPrescription = rx && p <> plan)
                 |> Seq.map (fun p -> p.Id)
-            let linkedPlans = if Seq.isEmpty otherLinkedPlans then "None" else warn (otherLinkedPlans |> String.concat ", ")
+            let linkedPlans = if Seq.isEmpty otherLinkedPlans then "None" else ValidatedText(WarnWithoutExplanation, (otherLinkedPlans |> String.concat ", ")).ToString()
             let notes =
                 match rx.Notes, rx.Comment with 
                  | "", "" ->  ""
-                 | "", comment -> comment
-                 | notes, "" -> notes
-                 | notes, comment -> $"{notes}\n{comment}"
+                 | "", comment -> $"\n{tab}" + comment.Replace("\n",$"\n{tab}")
+                 | notes, "" -> $"\n{tab}" + notes.Replace("\n",$"\n{tab}")
+                 | notes, comment -> $"\n{tab}" + notes.Replace("\n",$"\n{tab}") + "\n" + comment.Replace("\n",$"\n{tab}")
 
-            stringOutput ($"Prescription Name: {rx.Name}{revision}
+            EsapiResults.fromString ($"Prescription Name: {rx.Name}{revision}
 Site: {rx.Site}
 Prescribe To:
 {tab}{targets}
@@ -66,13 +67,13 @@ Energy: {energies}
 Gating: {gating}
 Bolus: {bolus}
 
-Notes: {warn notes}     
+Notes: {ValidatedText(WarnWithoutExplanation, notes)} 
 Other Linked Plans: {linkedPlans}")
 
     /// <summary>
     /// Gets Prescription Approval and Plan Review status and highlights based on their equivalence
     /// </summary>
-    let getPrescriptionVsPlanApprovals (plan: PlanSetup) =
+    let getPrescriptionVsPlanApprovals: EsapiCall = fun plan ->
         let rx = plan.RTPrescription
         let rxApproval = 
             checkForPrescription 
@@ -92,21 +93,21 @@ Other Linked Plans: {linkedPlans}")
                     Id = approval.UserId
                     DateTime = approval.ApprovalDateTime
                 |}
-            | None -> Error "Plan has not been marked Reviewed by physician"
+            | None -> Error (ValidatedText(Fail "Plan has not been marked Reviewed by physician", "Error"))
 
         match rxApproval, planApproval with
         | Ok rx, Ok plan -> 
-            let result = getPassFail (rx.DisplayName = plan.DisplayName)
-            prescriptionVsPlanOutput $"{rx.Status} by {result rx.DisplayName} ({rx.Id}) at {rx.DateTime}" $"{plan.Status} by {result plan.DisplayName} ({plan.Id}) at {plan.DateTime}"
+            let result = getPassWarnWithoutExplanation (rx.DisplayName = plan.DisplayName)
+            prescriptionVsPlanOutput $"{rx.Status} by {ValidatedText(result, rx.DisplayName)} ({rx.Id}) at {rx.DateTime}" $"{plan.Status} by {ValidatedText(result, plan.DisplayName)} ({plan.Id}) at {plan.DateTime}"
         | Ok rx, Error planErr -> 
-            prescriptionVsPlanOutput $"{rx.Status} by {rx.DisplayName} ({rx.Id}) at {rx.DateTime}" $"{fail planErr}"
-        | Error rxErr, Ok plan -> prescriptionVsPlanOutput $"{fail rxErr}" $"{plan.Status} by {plan.DisplayName} ({plan.Id}) at {plan.DateTime}"
-        | Error rxErr, Error planErr -> prescriptionVsPlanOutput $"{fail rxErr}" $"{fail planErr}"
+            prescriptionVsPlanOutput $"{rx.Status} by {rx.DisplayName} ({rx.Id}) at {rx.DateTime}" $"{planErr}"
+        | Error rxErr, Ok plan -> prescriptionVsPlanOutput $"{rxErr}" $"{plan.Status} by {plan.DisplayName} ({plan.Id}) at {plan.DateTime}"
+        | Error rxErr, Error planErr -> prescriptionVsPlanOutput $"{rxErr}" $"{planErr}"
 
     /// <summary>
     /// Gets Prescription and Plan Dose info and highlights based on their equivalence
     /// </summary>
-    let getPrescriptionVsPlanDose (plan: PlanSetup) =
+    let getPrescriptionVsPlanDose: EsapiCall = fun plan ->
         let rx = plan.RTPrescription
         let rxDoseInfo = 
             checkForPrescription rx (rx.Targets
@@ -129,50 +130,50 @@ Other Linked Plans: {linkedPlans}")
 
         match planDoseInfo, rxDoseInfo with
         | Ok planInfo, Ok rxInfo ->
-            let result = getPassFail (planInfo.TotalDose = (rxInfo |> Seq.head).TotalDose)
+            let result = getPassWarn "Target dose doesn't match plan dose" (planInfo.TotalDose = (rxInfo |> Seq.head).TotalDose)
             prescriptionVsPlanOutput 
                 (rxInfo
                 |> Seq.mapi(fun i targ -> 
                     if i = 0
-                    then $"{targ.Target}:\n{tab}{tab}{result targ.TotalDose} = {targ.DosePerFraction} x {targ.NumberOfFractions} Fx"
+                    then $"{targ.Target}:\n{tab}{tab}{ValidatedText(result, targ.TotalDose)} = {targ.DosePerFraction} x {targ.NumberOfFractions} Fx"
                     else $"{targ.Target}:\n{tab}{tab}{targ.TotalDose} = {targ.DosePerFraction} x {targ.NumberOfFractions} Fx")
                 |> String.concat $"\n{tab}")
-                ($"{planInfo.Target}:\n{tab}{tab}{result planInfo.TotalDose} = {planInfo.DosePerFraction} x {planInfo.NumberOfFractions} Fx")
+                ($"{planInfo.Target}:\n{tab}{tab}{ValidatedText(result, planInfo.TotalDose)} = {planInfo.DosePerFraction} x {planInfo.NumberOfFractions} Fx")
         | Ok planInfo, Error rxErr ->
-            prescriptionVsPlanOutput (fail rxErr) ($"{planInfo.Target}:\n{tab}{tab}{planInfo.TotalDose} = {planInfo.DosePerFraction} x {planInfo.NumberOfFractions} Fx")
-        | Error err, _ -> stringOutput "Something went wrong"
+            prescriptionVsPlanOutput (rxErr) ($"{planInfo.Target}:\n{tab}{tab}{planInfo.TotalDose} = {planInfo.DosePerFraction} x {planInfo.NumberOfFractions} Fx")
+        | _, _ -> EsapiResults.fromString "Something went wrong"
     
     /// <summary>
     /// Gets Prescription Fractionation Pattern and Machine Treatment Appointments to display on calendar
     /// </summary>
-    let getPrescriptionVsPlanFractionationPattern (plan: PlanSetup) =
+    let getPrescriptionVsPlanFractionationPattern: EsapiCall = fun plan ->
         let rx = plan.RTPrescription
         
         // Prescription fractionation from database
         match sqlGetRxFrequency plan.Course.Patient.Id plan.Id plan.Course.Id with
-        | Error error -> $"Error getting Prescription Frequency from database: {fail error}" |> stringOutput
+        | Error error -> $"Error getting Prescription Frequency from database: {ValidatedText(WarnWithoutExplanation, error)}" |> EsapiResults.fromString
         | Ok result -> 
             let rxText = checkForPrescription rx result
 
             // Patient treatment appointments from database
             match sqlGetScheduledActivities plan.Course.Patient.Id with
-            | Error error -> $"Error getting Treatment Activities from database: {fail error}" |> stringOutput
+            | Error error -> $"Error getting Treatment Activities from database: {ValidatedText(WarnWithoutExplanation, error)}" |> EsapiResults.fromString
             | Ok patientAppts ->
                 let numScheduled = (patientAppts |> Seq.distinctBy(fun x -> x.ApptTime) |> Seq.length)
 
                 let planText =
                     if Seq.length patientAppts = 0
-                    then warn "No machine appointments scheduled"
+                    then ValidatedText(WarnWithoutExplanation, "No machine appointments scheduled").ToString()
                     else 
                         let bidDays = 
                             patientAppts 
                             |> Seq.countBy(fun x -> x.ApptTime.Date)
                             |> Seq.filter(fun x -> snd x > 1)
-                        sprintf "%s%s\n%s"
-                            (getPassWarn (numScheduled = plan.NumberOfFractions.GetValueOrDefault()) $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-1).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}")
+                        sprintf "%A%s\n%s"
+                            (ValidatedText(getPassWarn "Scheduled number of fractions doesn't match plan" (numScheduled = plan.NumberOfFractions.GetValueOrDefault()), $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-1).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}"))
                             (if Seq.length bidDays > 1
                                 then 
-                                    sprintf "\n%sDays with multiple appointments (Mouse over calendar to the right to check):\n%s" tab (warn (bidDays |> Seq.map(fun x -> $"{tab}{tab}{(fst x).ToShortDateString()} - {snd x} appointments") |> String.concat "\n"))
+                                    sprintf "\n%sDays with multiple appointments (Mouse over calendar to the right to check):\n%A" tab (ValidatedText(WarnWithoutExplanation, (bidDays |> Seq.map(fun x -> $"{tab}{tab}{(fst x).ToShortDateString()} - {snd x} appointments") |> String.concat "\n")))
                                 else
                                     "")
                             $"{tab}(Machine appointments only, doesn't account primary vs boost, V-sim, or previous courses)"
@@ -182,15 +183,15 @@ Other Linked Plans: {linkedPlans}")
                 | Ok rxInfo -> 
                     { (prescriptionVsPlanOutput rxInfo planText) with 
                         TreatmentAppointments = Some (patientAppts |> Seq.toList) }
-                | Error rxError -> $"Prescription:\n{tab}{fail rxError}\nPlan:\n{tab}{planText}" |> stringOutput
+                | Error rxError -> $"Prescription:\n{tab}{rxError}\nPlan:\n{tab}{planText}" |> EsapiResults.fromString
 
-    let getPrescriptionVsPlanEnergy (plan: PlanSetup) =
+    let getPrescriptionVsPlanEnergy: EsapiCall = fun plan ->
         let rx = plan.RTPrescription
         let rxText = checkForPrescription rx (rx.Energies |> String.concat $"\n{tab}")
 
         let planText = 
             match plan.Beams |> Seq.filter (fun b -> not b.IsSetupField) with
-            | beams when Seq.isEmpty beams -> Error "No treatment beams in plan"
+            | beams when Seq.isEmpty beams -> Error (ValidatedText(Fail "No treatment beams in plan", "Error"))
             | beams ->
                 Ok(beams 
                 |> Seq.map (fun b -> b.EnergyModeDisplayName) 
@@ -200,11 +201,11 @@ Other Linked Plans: {linkedPlans}")
         match rxText, planText with
         // TODO: check energies against each other here
         | Ok rx, Ok plan -> prescriptionVsPlanOutput rx plan
-        | Ok rx, Error plan -> prescriptionVsPlanOutput rx (fail plan)
-        | Error rx, Ok plan -> prescriptionVsPlanOutput (fail rx) plan
-        | Error rx, Error plan -> prescriptionVsPlanOutput (fail rx) (fail plan)
+        | Ok rx, Error plan -> prescriptionVsPlanOutput rx (plan)
+        | Error rx, Ok plan -> prescriptionVsPlanOutput (rx) plan
+        | Error rx, Error plan -> prescriptionVsPlanOutput (rx) (plan)
 
-    let getPrescriptionVsPlanModality (plan: PlanSetup) =
+    let getPrescriptionVsPlanModality: EsapiCall = fun plan ->
         let rx = plan.RTPrescription
         let rxText = 
             checkForPrescription 
@@ -213,7 +214,7 @@ Other Linked Plans: {linkedPlans}")
 
         let planText = 
             match plan.Beams |> Seq.filter (fun b -> not b.IsSetupField) with
-            | beams when Seq.isEmpty beams -> Error "No treatment beams in plan"
+            | beams when Seq.isEmpty beams -> Error (ValidatedText(Fail "No treatment beams in plan", "Error"))
             | beams ->
                 Ok(beams
                 |> Seq.map (fun b ->
@@ -224,21 +225,21 @@ Other Linked Plans: {linkedPlans}")
                 |> Seq.distinct
                 |> String.concat $"\n{tab}")
 
-        let result = getPassFail (rxText = planText)
+        let result = getPassWarnWithoutExplanation (rxText = planText)
 
         match rxText, planText with
-        | Ok rx, Ok plan -> prescriptionVsPlanOutput (result rx) (result plan)
-        | Ok rx, Error plan -> prescriptionVsPlanOutput rx (fail plan)
-        | Error rx, Ok plan -> prescriptionVsPlanOutput (fail rx) plan
-        | Error rx, Error plan -> prescriptionVsPlanOutput (fail rx) (fail plan)
+        | Ok rx, Ok plan -> prescriptionVsPlanOutput (ValidatedText(result, rx)) (ValidatedText(result, plan))
+        | Ok rx, Error plan -> prescriptionVsPlanOutput rx (plan)
+        | Error rx, Ok plan -> prescriptionVsPlanOutput (rx) plan
+        | Error rx, Error plan -> prescriptionVsPlanOutput (rx) (plan)
 
-    let getPrescriptionVsPlanTechnique (plan: PlanSetup) =
+    let getPrescriptionVsPlanTechnique: EsapiCall = fun plan ->
         let rx = plan.RTPrescription
         let rxText = checkForPrescription rx (rx.Technique.Substring(1, rx.Technique.Length - 2))
 
         let planText = 
             match plan.Beams |> Seq.filter (fun b -> not b.IsSetupField) with
-            | beams when Seq.isEmpty beams -> Error "No treatment beams in plan"
+            | beams when Seq.isEmpty beams -> Error (ValidatedText(Fail "No treatment beams in plan", "Error"))
             | beams ->
                 Ok(beams
                 |> Seq.map (fun b ->
@@ -257,11 +258,11 @@ Other Linked Plans: {linkedPlans}")
         match rxText, planText with
         // TODO: check energies against each other here
         | Ok rx, Ok plan -> prescriptionVsPlanOutput rx plan
-        | Ok rx, Error plan -> prescriptionVsPlanOutput rx (fail plan)
-        | Error rx, Ok plan -> prescriptionVsPlanOutput (fail rx) plan
-        | Error rx, Error plan -> prescriptionVsPlanOutput (fail rx) (fail plan)
+        | Ok rx, Error plan -> prescriptionVsPlanOutput rx (plan)
+        | Error rx, Ok plan -> prescriptionVsPlanOutput (rx) plan
+        | Error rx, Error plan -> prescriptionVsPlanOutput (rx) (plan)
     
-    let getPrescriptionVsPlanBolus (plan: PlanSetup) =
+    let getPrescriptionVsPlanBolus: EsapiCall = fun plan ->
         let rx = plan.RTPrescription
 
         let rxText = 
@@ -273,7 +274,7 @@ Other Linked Plans: {linkedPlans}")
 
         let planText =
             match plan.Beams |> Seq.filter (fun b -> not b.IsSetupField) with
-            | beams when Seq.isEmpty beams -> Error "No treatment beams in plan"
+            | beams when Seq.isEmpty beams -> Error (ValidatedText(Fail "No treatment beams in plan", "Error"))
             | beams ->
                 Ok(beams
                 |> Seq.filter (fun b -> not b.IsSetupField)
@@ -289,29 +290,29 @@ Other Linked Plans: {linkedPlans}")
         match rxText, planText with
         | Ok rx, Ok plan ->
             match rx, plan with
-            | "No bolus", "No bolus" -> prescriptionVsPlanOutput (pass rx) (pass plan)
-            | "No bolus", _ -> prescriptionVsPlanOutput (fail rx) (warn plan)
-            | _, "No bolus" -> prescriptionVsPlanOutput (warn rx) (fail plan)
-            | _, _ -> prescriptionVsPlanOutput (warn rx) (warn plan)
-        | Ok rx, Error plan -> prescriptionVsPlanOutput (id rx) (fail plan)
-        | Error rx, Ok plan -> prescriptionVsPlanOutput (fail rx) (id plan)
-        | Error rx, Error plan -> prescriptionVsPlanOutput (fail rx) (fail plan)
+            | "No bolus", "No bolus" -> prescriptionVsPlanOutput (ValidatedText(Pass, rx)) (ValidatedText(Pass, plan))
+            | "No bolus", _ -> prescriptionVsPlanOutput (ValidatedText(Fail "Bolus used in plan was not prescribed", rx)) (ValidatedText(WarnWithoutExplanation, plan))
+            | _, "No bolus" -> prescriptionVsPlanOutput (ValidatedText(WarnWithoutExplanation, rx)) (ValidatedText(Warn "Prescribed bolus was not used in plan", rx))
+            | _, _ -> prescriptionVsPlanOutput (ValidatedText(WarnWithoutExplanation, rx)) (ValidatedText(WarnWithoutExplanation, plan))
+        | Ok rx, Error plan -> prescriptionVsPlanOutput (ValidatedText(WarnWithoutExplanation, rx)) (plan)
+        | Error rx, Ok plan -> prescriptionVsPlanOutput (rx) (ValidatedText(WarnWithoutExplanation, plan))
+        | Error rx, Error plan -> prescriptionVsPlanOutput (rx) (plan)
 
-    let getCoursePlanIntentDiagnosis (plan: PlanSetup) =
+    let getCoursePlanIntentDiagnosis: EsapiCall = fun plan ->
         let courseIntent =
             match plan.Course.Intent with
-            | "" -> fail "No intent specified"
+            | "" -> ValidatedText(Fail "No intent specified", "Error").ToString()
             | intent -> intent
         let courseDiagnosis =
             match plan.Course.Diagnoses with
-            | sequence when Seq.isEmpty sequence -> fail "No diagnoses attached"
+            | sequence when Seq.isEmpty sequence -> ValidatedText(Fail "No diagnoses attached", "Error").ToString()
             | diagnoses -> 
                 diagnoses 
                 |> Seq.map (fun diag -> $"{diag.ClinicalDescription.Trim()} ({diag.Code.Trim()})")
                 |> String.concat $"\n{tab}{tab}"
         let planIntent =
             match plan.PlanIntent with
-            | "" -> warn "No intent specified"
+            | "" -> ValidatedText(WarnWithoutExplanation, "No intent specified").ToString()
             | intent -> toTitleCase intent
 
-        stringOutput $"Course:\n{tab}Intent:\n{tab}{tab}{courseIntent}\n{tab}Diagnosis:\n{tab}{tab}{courseDiagnosis}\nPlan:\n{tab}Intent:\n{tab}{tab}{planIntent}"
+        EsapiResults.fromString $"Course:\n{tab}Intent:\n{tab}{tab}{courseIntent}\n{tab}Diagnosis:\n{tab}{tab}{courseDiagnosis}\nPlan:\n{tab}Intent:\n{tab}{tab}{planIntent}"

@@ -4,6 +4,7 @@ open System.Collections.Generic
 open VMS.TPS.Common.Model.API
 open VMS.TPS.Common.Model.Types
 open CommonHelpers
+open TG275Checklist.Model.EsapiService
 
 module DoseDistributionAndPlanQuality =
 
@@ -15,16 +16,16 @@ module DoseDistributionAndPlanQuality =
 
     let targetDose constraintType (plan: PlanSetup) = 
         match getTargetStructure plan with
-        | None -> warn "No plan target"
+        | None -> ValidatedText(WarnWithoutExplanation, "No plan target").ToString()
         | Some target -> 
             match constraintType with
-            | Min -> sprintf "%0.1f%%" (plan.GetDoseAtVolume(target, 100.0, VolumePresentation.Relative, DoseValuePresentation.Relative).Dose)
-            | Max -> sprintf "%0.1f%%" (plan.GetDoseAtVolume(target, 0.0, VolumePresentation.Relative, DoseValuePresentation.Relative).Dose)
-            | DoseToVolume vol -> sprintf "%0.1f%%" (plan.GetDoseAtVolume(target, vol, VolumePresentation.Relative, DoseValuePresentation.Relative).Dose)
-            | VolumeAtDose dose -> sprintf "%0.1f%%" (plan.GetVolumeAtDose(target, dose, VolumePresentation.Relative))
+            | Min -> $"%0.1f{plan.GetDoseAtVolume(target, 100.0, VolumePresentation.Relative, DoseValuePresentation.Relative).Dose}%%"
+            | Max -> $"%0.1f{plan.GetDoseAtVolume(target, 0.0, VolumePresentation.Relative, DoseValuePresentation.Relative).Dose}%%"
+            | DoseToVolume vol -> $"%0.1f{plan.GetDoseAtVolume(target, vol, VolumePresentation.Relative, DoseValuePresentation.Relative).Dose}%%"
+            | VolumeAtDose dose -> $"%0.1f{plan.GetVolumeAtDose(target, dose, VolumePresentation.Relative)}%%"
     
 
-    let getTargetCoverage (plan: PlanSetup) =
+    let getTargetCoverage: EsapiCall = fun plan ->
         match getTargetStructure plan with
         | None -> "No plan target"
         | Some target -> 
@@ -42,9 +43,9 @@ module DoseDistributionAndPlanQuality =
                 (targetDose (VolumeAtDose (new DoseValue(110.0, "%"))) plan)
                 tab 
                 (targetDose Max plan)
-        |> stringOutput
+        |> EsapiResults.fromString
 
-    let getOARMaxDoses (plan: PlanSetup) =
+    let getOARMaxDoses: EsapiCall = fun plan ->
         let OARTypes = [ "AVOIDANCE"; "CAVITY"; "ORGAN" ]
     
         sprintf "OARs with max dose > 2 Gy:\n%s"
@@ -54,41 +55,39 @@ module DoseDistributionAndPlanQuality =
             |> Seq.filter (fun x -> (snd x).Dose > 200.0)
             |> Seq.map (fun x -> sprintf "%s%s - %A" tab (fst x).Id (snd x))
             |> String.concat "\n")
-        |> stringOutput
+        |> EsapiResults.fromString
 
-    let getHotspotLocation (plan: PlanSetup) =
+    let getHotspotLocation: EsapiCall = fun plan ->
         let list =
             plan.StructureSet.Structures
             |> Seq.filter (fun x -> x.DicomType <> "BODY" && x.DicomType <> "EXTERNAL" && (not x.IsEmpty) && x.HasSegment)
             |> Seq.filter (fun x -> x.IsPointInsideSegment(plan.Dose.DoseMax3DLocation))
             |> Seq.sortBy (fun x -> x.Volume)
-            |> Seq.map (fun x -> 
-                (if x.Id = plan.TargetVolumeID
-                then pass 
-                else if OARTypes |> List.contains x.DicomType
-                then fail
-                else id) x.Id)
+            |> Seq.map (fun x ->  
+                let result =
+                    if x.Id = plan.TargetVolumeID
+                    then Pass 
+                    else if OARTypes |> List.contains x.DicomType
+                    then WarnWithoutExplanation
+                    else Id 
+                ValidatedText(result, x.Id))
     
         if Seq.length list = 0
-        then warn "Hotspot is not within any contoured structures"
-        else 
-            sprintf "Hotspot is within:\n%s"
-                (list
-                |> Seq.map (fun x -> sprintf "%s%s" tab x)
-                |> String.concat "\n")
-        |> stringOutput
+        then ValidatedText(WarnWithoutExplanation, "Hotspot is not within any contoured structures").ToString()
+        else $"""Hotspot is within:{'\n'}{list |> Seq.map (fun x -> $"{tab}{x}") |> String.concat "\n"}"""
+        |> EsapiResults.fromString
 
-    let getReferencePoints (plan: PlanSetup) =
+    let getReferencePoints: EsapiCall = fun plan ->
         let primary = plan.PrimaryReferencePoint
         let primaryText = 
             if isNull primary 
             then "" 
-            else $"Primary Plan Reference Point:
+            else $"""Primary Plan Reference Point:
 {tab}{primary.Id}:
-{tab}{tab}Session dose limit: {getPassWarn (primary.SessionDoseLimit = plan.DosePerFraction) primary.SessionDoseLimit}
+{tab}{tab}Session dose limit: {ValidatedText(getPassWarn "Session dose limit doesn't match planned fraction dose" (primary.SessionDoseLimit = plan.DosePerFraction), primary.SessionDoseLimit)}
 {tab}{tab}Daily dose limit: {primary.DailyDoseLimit}
-{tab}{tab}Total dose limit: {getPassWarn (primary.TotalDoseLimit = plan.TotalDose) primary.TotalDoseLimit}
-{tab}{tab}Has a location: {primary.HasLocation(plan)}"
+{tab}{tab}Total dose limit: {ValidatedText(getPassWarn "Total dose limit doesn't match plan dose" (primary.TotalDoseLimit = plan.TotalDose), primary.TotalDoseLimit)}
+{tab}{tab}Has a location: {primary.HasLocation(plan)}"""
         
         let secondaries = 
             plan.ReferencePoints
@@ -104,22 +103,22 @@ module DoseDistributionAndPlanQuality =
             else ""
 
         match primaryText, secondariesText with
-        | "", "" -> fail "No Primary Reference Point selected for plan"
+        | "", "" -> ValidatedText(WarnWithoutExplanation, "No Primary Reference Point selected for plan").ToString()
         | p, "" -> p
-        | "", s -> sprintf "%s\n\n%s" (fail "No Primary Reference Point selected for plan") s
+        | "", s -> $"""{ValidatedText(WarnWithoutExplanation, "No Primary Reference Point selected for plan")}{"\n\n"}{s}"""
         | p, s -> $"{p}\n\n{s}"
-        |> stringOutput
+        |> EsapiResults.fromString
 
-    let getPlanNormalization (plan: PlanSetup) =
+    let getPlanNormalization: EsapiCall = fun plan ->
         sprintf "%s%s"
             plan.PlanNormalizationMethod
             (if plan.PlanNormalizationMethod.Contains("Plan Normalization Value:") then "" else sprintf "\nValue: %0.1f%%" plan.PlanNormalizationValue)
-        |> stringOutput
+        |> EsapiResults.fromString
 
     let getCI (body:Structure) (struc:Structure) (plan: PlanSetup) dose =
         plan.GetVolumeAtDose(body, (new DoseValue(dose, DoseValue.DoseUnit.Percent)), VolumePresentation.AbsoluteCm3) / struc.Volume
 
-    let getTargetCIs (plan: PlanSetup) =
+    let getTargetCIs: EsapiCall = fun plan ->
         match getTargetStructure plan with
         | None -> "No plan target"
         | Some target -> 
@@ -129,7 +128,7 @@ module DoseDistributionAndPlanQuality =
                 sprintf "CI100%% = %0.1f\nCI50%% = %0.1f"
                     (getCI body target plan 100.0)
                     (getCI body target plan 50.0)
-        |> stringOutput
+        |> EsapiResults.fromString
 
     type beamType =
     | Electron
@@ -147,7 +146,7 @@ module DoseDistributionAndPlanQuality =
             |> Seq.map (fun x -> sprintf "%s%s = %s" tab x.Key x.Value)
             |> String.concat "\n")
 
-    let getCalculationAlgorithmInfo (plan: PlanSetup) =
+    let getCalculationAlgorithmInfo: EsapiCall = fun plan ->
         let techniques = 
             plan.Beams
             |> Seq.filter (fun x -> not x.IsSetupField)
@@ -192,9 +191,9 @@ module DoseDistributionAndPlanQuality =
         )
         |> Seq.concat
         |> String.concat "\n\n"
-        |> stringOutput
+        |> EsapiResults.fromString
 
-    let getPlanSums (plan: PlanSetup) =
+    let getPlanSums: EsapiCall = fun plan ->
         let otherPlansInCourse =
             plan.Course.PlanSetups
             |> Seq.filter(fun x -> x.Id <> plan.Id)
@@ -220,10 +219,10 @@ module DoseDistributionAndPlanQuality =
             if Seq.length otherPlansInCourse = 0
             then "No plan sums containing this plan"
             else
-                sprintf "Other plans in course:\n%s%s\n%s" 
+                sprintf "Other plans in course:\n%s%s\n%A" 
                     tab 
                     (otherPlansInCourse |> String.concat $"\n{tab}") 
-                    (warn "No plan sums containing this plan")
+                    (ValidatedText(WarnWithoutExplanation, "No plan sums containing this plan"))
         else  
             sprintf "Other plans in course:\n%s%s\nPlan sums containing %s:\n%s%s" 
                 tab 
@@ -231,4 +230,4 @@ module DoseDistributionAndPlanQuality =
                 plan.Id 
                 tab 
                 (planSums |> String.concat $"\n{tab}")
-        |> stringOutput
+        |> EsapiResults.fromString

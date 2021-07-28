@@ -2,10 +2,11 @@
 
 open VMS.TPS.Common.Model.API
 open CommonHelpers
+open TG275Checklist.Model.EsapiService
 
 module DoseVerification =
 
-    let getQaPlans (plan: PlanSetup) =
+    let getQaPlans: EsapiCall = fun plan ->
         let qas = 
             plan.Course.Patient.Courses
             |> Seq.map(fun x -> x.PlanSetups)
@@ -16,4 +17,4 @@ module DoseVerification =
         if Seq.length qas = 0
         then "No verification plans have been created for this plan"
         else sprintf "Verification Plans:\n%s%s" tab (qas |> String.concat $"\n{tab}")
-        |> stringOutput
+        |> EsapiResults.fromString

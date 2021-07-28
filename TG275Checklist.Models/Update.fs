@@ -9,6 +9,7 @@ open ChecklistTypes
 open ChecklistFunctions
 open PlanChecklist
 open UpdateFunctions
+open TG275Checklist.EsapiCalls
 
 open type System.Windows.Visibility
 open FSharp.Data
@@ -143,7 +144,7 @@ module Update =
                 | -1 -> log.Error(ex, func)
                 | i -> log.Error(ex, func.Substring(i+1))
             | None -> ()
-            let failedResult = { EsapiResults.init with Text = TG275Checklist.EsapiCalls.CommonHelpers.fail "Error processing results"}
+            let failedResult = { EsapiResults.init with Text = ValidatedText(Fail "Couldn't process results", "Error").ToString()}
             (m |> updateModelWithLoadedEsapiResults (Some failedResult)), Cmd.ofMsg UpdateLoadingState
         | LoadingComplete ->
             { m with StatusBar = StatusBar.ready }, Cmd.none

@@ -50,7 +50,12 @@ module EsapiService =
             //OtherThingsToDisplay1: 'a option
             //OtherThingsToDisplay2: 'a option
         }
-        static member init = { Text = ""; TreatmentAppointments = None}
+        static member init = 
+            { 
+                Text = ""
+                TreatmentAppointments = None
+            }
+        static member fromString str = { EsapiResults.init with Text = str }
 
     type PureEsapiFunction = PlanSetup -> EsapiResults
     type EsapiChecklistFunction = PlanInfo -> Async<EsapiResults>

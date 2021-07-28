@@ -72,5 +72,5 @@ module StructureChecks =
                 $"""{x.Id} - {Seq.length (x |> hellaLowResPoints)} points - originally {Seq.length x.MeshGeometry.Positions}{'\n'}{thing}{'\n'}    Finished in %0.1f{(finish - start).TotalSeconds} seconds"""
             | None -> $"")
         |> String.concat "\n"
-        |> stringOutput
+        |> EsapiResults.fromString
     

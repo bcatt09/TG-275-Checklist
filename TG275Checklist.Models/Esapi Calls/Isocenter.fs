@@ -2,6 +2,7 @@
 
 open VMS.TPS.Common.Model.API
 open CommonHelpers
+open TG275Checklist.Model.EsapiService
 
 module Isocenter =
 
@@ -10,23 +11,23 @@ module Isocenter =
             |> Seq.map(fun x -> x.IsocenterPosition)
             |> Seq.distinct
 
-    let getIsocenterPlacement (plan:PlanSetup) =
+    let getIsocenterPlacement: EsapiCall = fun plan ->
         let isos = getIsocenters plan
 
         match Seq.length isos with
-        | n when n > 1 -> sprintf "%s: %i isocenters detected, please check their positioning manually" (warn "Warning") n
+        | n when n > 1 -> $"""{ValidatedText(WarnWithoutExplanation, "Warning")}: {ValidatedText(WarnWithoutExplanation, n.ToString())} isocenters detected"""
         | 1 -> 
             match getTargetStructure plan with
-            | None -> pass "1 isocenter"
+            | None -> $"""{ValidatedText(Pass, "1")} Isocenter"""
             | Some target ->
                 if target.IsPointInsideSegment(isos |> Seq.exactlyOne)
-                then sprintf "Isocenter is %s target (%s)" (pass "inside") target.Id
-                else sprintf "Isocenter is positioned %s of the target (%s)" (warn "outside") target.Id
-        | 0 -> warn "No isocenters found (No beams in the plan?)"
-        | _ -> fail "Error"
-        |> stringOutput
+                then $"""Isocenter is {ValidatedText(Pass, "inside")} target ({target.Id})"""
+                else $"""Isocenter is positioned {ValidatedText(WarnWithoutExplanation, "outside")} of the target: {target.Id}"""
+        | 0 -> ValidatedText(Warn "No beams in the plan?", "No isocenters found").ToString()
+        | _ -> ValidatedText(Fail "Somehow got a negative number of isocenters", "Error").ToString()
+        |> EsapiResults.fromString
 
-    let getShifts (plan:PlanSetup) =
+    let getShifts: EsapiCall = fun plan ->
         // User origin and markers to calculate shifts from
         let shiftFromList = 
             ("User Origin", plan.StructureSet.Image.UserOrigin)
@@ -41,8 +42,8 @@ module Isocenter =
             |> Seq.distinctBy (fun x -> snd x)
             |> Seq.map(fun pt -> 
                 // Point to calc shifts from
-                sprintf "Shifts from %s: (%.2f, %.2f, %.2f)%s" 
-                    (warn (fst pt)) 
+                sprintf "Shifts from %A: (%.2f, %.2f, %.2f)%s" 
+                    (ValidatedText(Highlight, (fst pt))) 
                     (((snd pt).x - plan.StructureSet.Image.UserOrigin.x) / 10.0)
                     (((snd pt).y - plan.StructureSet.Image.UserOrigin.y) / 10.0)
                     (((snd pt).z - plan.StructureSet.Image.UserOrigin.z) / 10.0)
@@ -59,20 +60,20 @@ module Isocenter =
                     |> String.concat "\n"))
             |> String.concat "\n"
         
-        let setupShifts = getListOfSetupNotes plan
+        let setupShifts = getSetupNotesAsString plan
 
-        $"{isocenterShifts}\n\n{setupShifts}" |> stringOutput
+        $"{isocenterShifts}\n\n{setupShifts}" |> EsapiResults.fromString
 
-    let getNumberOfIsocenters (plan:PlanSetup) =
+    let getNumberOfIsocenters: EsapiCall = fun plan ->
         let num = 
             plan.Beams
             |> Seq.map(fun x -> x.IsocenterPosition)
             |> Seq.distinct
             |> Seq.length
 
-        match num with
-        | n when n > 1 -> sprintf "%s: %i isocenters detected" (warn "Warning") n
-        | 1 -> pass "1 isocenter"
-        | 0 -> warn "No isocenters found (No beams in the plan?)"
-        | _ -> fail "Error"
-        |> stringOutput
+        (match num with
+        | n when n > 1 -> ValidatedText(WarnWithoutExplanation, $"{n} isocenters detected")
+        | 1 -> ValidatedText(Pass, "1 isocenter")
+        | 0 -> ValidatedText(Warn "No beams in the plan?", "No isocenters found")
+        | _ -> ValidatedText(Fail "Somehow got a negative number of isocenters", "Error")).ToString()
+        |> EsapiResults.fromString
