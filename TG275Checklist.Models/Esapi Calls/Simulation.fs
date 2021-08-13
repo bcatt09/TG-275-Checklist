@@ -36,5 +36,5 @@ module Simulation =
                 else getPassWarn "CT ID couldn't be checked against the date because it doesn't follow naming conventions"
             let dateResult = isDateFunction (tryGetDate(ct.Id) = DateTime.Parse(creationDate).ToString("yyyyMMdd"))
 
-            $"Imaging Device for HU Curve: {ValidatedText(Highlight, ct.Series.ImagingDeviceId)}\nCT Name: {ValidatedText(dateResult, ct.Id)}\nCreation date: {ValidatedText(dateResult, creationDate)}\n# of slices: {ct.ZSize}"
+            $"Imaging Device for HU Curve: {ValidatedText(Highlight, ct.Series.ImagingDeviceId)}\nCT Name: {ValidatedText(dateResult, ct.Id)}\nCreation date: {ValidatedText(dateResult, creationDate)}\n# of slices: {ct.ZSize}\nSlice thickness: %0.1f{ct.ZRes} mm"
         |> EsapiResults.fromString
