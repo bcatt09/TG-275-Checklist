@@ -159,6 +159,63 @@ module StandardPractices =
                         |> String.concat "\n")
         |> EsapiResults.fromString
 
+    let getBeamModifiers: EsapiCall = fun plan ->
+        let resultsPerBeam = 
+            plan.Beams
+            |> Seq.filter (fun x -> not x.IsSetupField)
+            |> Seq.map (fun x -> 
+                {|
+                    beam = x.Id
+                    applicator =
+                        match x.Applicator with 
+                        | null -> None 
+                        | app -> Some app.Id
+
+                    blocks =
+                        match Seq.length x.Blocks with
+                        | 0 -> None
+                        | _ -> Some (
+                                x.Blocks 
+                                |> Seq.map (fun b -> $"{b.Id}\n{tab}{tab}{tab}Material: {b.AddOnMaterial.Id}\n{tab}{tab}{tab}Block transmission: %0.1f{b.TransmissionFactor*100.0}%%\n{tab}{tab}{tab}Type: {b.Type}\n{tab}{tab}{tab}Diverging Cut: {b.IsDiverging}\n{tab}{tab}{tab}Tray: {b.Tray.Id}")
+                                |> String.concat $"\n{tab}{tab}")
+
+                    compensator = 
+                        match x.Compensator with
+                        | null -> None
+                        | comp -> Some $"{comp.Id}\n{tab}{tab}{tab}Material: {comp.Material}\n{tab}{tab}{tab}Slot: {comp.Slot.Id}\n{tab}{tab}{tab}Tray: {comp.Tray.Id}"
+
+                    trays =
+                        match Seq.length x.Trays with
+                        | 0 -> None
+                        | _ -> Some (x.Trays |> Seq.map (fun t -> $"{t.Id}") |> String.concat "\n")
+
+                    wedges =
+                        match Seq.length x.Wedges with
+                        | 0 -> None
+                        | _ -> Some (x.Wedges |> Seq.map (fun w -> $"{w.Id}") |> String.concat "\n")
+                |})
+
+        let resultsPerModifier =
+            {|
+                applicator = resultsPerBeam |> Seq.map(fun x -> Option.map (fun _ -> $"{tab}{x.beam}:\n{tab}{tab}{x.applicator.Value}") x.applicator)
+                blocks = resultsPerBeam |> Seq.map(fun x -> Option.map (fun _ -> $"{tab}{x.beam}:\n{tab}{tab}{x.blocks.Value}") x.blocks)
+                compensator = resultsPerBeam |> Seq.map(fun x -> Option.map (fun _ -> $"{tab}{x.beam}:\n{tab}{tab}{x.compensator.Value}") x.compensator)
+                trays = resultsPerBeam |> Seq.map(fun x -> Option.map (fun _ -> $"{tab}{x.beam}:\n{tab}{tab}{x.trays.Value}") x.trays)
+                wedges = resultsPerBeam |> Seq.map(fun x -> Option.map (fun _ -> $"{tab}{x.beam}:\n{tab}{tab}{x.wedges.Value}") x.wedges)
+            |}
+
+        let fullResults =
+            resultsPerModifier.wedges |> Seq.append (seq{if Seq.length (Seq.choose id resultsPerModifier.wedges) > 0 then Some " Wedges:" else None}) |> Seq.choose id
+            |> Seq.append (resultsPerModifier.trays |> Seq.append (seq{if Seq.length (Seq.choose id resultsPerModifier.trays) > 0 then Some "Trays:" else None}) |> Seq.choose id)
+            |> Seq.append (resultsPerModifier.compensator |> Seq.append (seq{if Seq.length (Seq.choose id resultsPerModifier.compensator) > 0 then Some "Compensator:" else None}) |> Seq.choose id)
+            |> Seq.append (resultsPerModifier.blocks |> Seq.append (seq{if Seq.length (Seq.choose id resultsPerModifier.blocks) > 0 then Some "Blocks:" else None}) |> Seq.choose id)
+            |> Seq.append (resultsPerModifier.applicator |> Seq.append (seq{if Seq.length (Seq.choose id resultsPerModifier.applicator) > 0 then Some "Applicator:" else None}) |> Seq.choose id)
+
+        match Seq.length fullResults with
+        | 0 -> "None"
+        | _ -> fullResults |> String.concat "\n"
+        |> EsapiResults.fromString
+
     let getCalculationLogs: EsapiCall = fun plan ->
         let logs = 
             plan.Beams

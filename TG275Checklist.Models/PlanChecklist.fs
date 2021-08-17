@@ -68,7 +68,7 @@ module PlanChecklist =
             "Field delivery times", None        // TODO
             "Field size and aperture", None
             "Bolus utilization", Some getBeamBolus
-            "Beam modifiers (e.g. wedges, electron and photon blocks, trays, etc.)", None
+            "Beam modifiers (e.g. wedges, electron and photon blocks, trays, etc.)", Some getBeamModifiers
             "Treatment plan warnings/errors", Some getCalculationLogs
             "Tolerance table", Some getBeamToleranceTables
             "Potential for collision", None
