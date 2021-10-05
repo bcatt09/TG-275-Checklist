@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
+    <None Include="SQL Queries\ElectronBlockCustomCodes.sql" />
     <None Include="SQL Queries\OncologistName.sql" />
     <None Include="SQL Queries\OncologistUserId.sql" />
     <None Include="SQL Queries\PrescribedFrequency.sql" />

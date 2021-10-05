@@ -66,3 +66,18 @@ let sqlGetSetupNotes patId courseId planId =
         Ok setupNotes
     with ex ->
         Error (ex.Message)
+        
+let sqlGetElectronBlockCustomCodes patId courseId planId =
+    try
+        let cmd = new SqlCommandProvider<const(SqlFile<"SQL Queries\ElectronBlockCustomCodes.sql">.Text), connectionString>(connectionString)
+        let customCodes =
+            cmd.Execute(patId = patId, courseId = courseId, planId = planId)
+            |> Seq.map (fun x -> 
+                {|
+                    fieldId = x.RadiationId
+                    blockId = x.BlockId
+                    customCode = x.CustomCode
+                |})
+        Ok customCodes
+    with ex ->
+        Error (ex.Message)

@@ -5,6 +5,7 @@ open VMS.TPS.Common.Model.API
 open VMS.TPS.Common.Model.Types
 open CommonHelpers
 open TG275Checklist.Model.EsapiService
+open TG275Checklist.Sql
 
 module StandardPractices =
 
@@ -158,8 +159,45 @@ module StandardPractices =
                                         |> String.concat "\n")))
                         |> String.concat "\n")
         |> EsapiResults.fromString
-
+        
+    type customCodeRecord =
+        {
+            customCode: string
+            fieldId: string
+            blockId: string
+        }
     let getBeamModifiers: EsapiCall = fun plan ->
+        let customCodes = 
+            match sqlGetElectronBlockCustomCodes plan.Course.Patient.Id plan.Course.Id plan.Id with
+            | Error error -> seq{
+                {
+                    customCode = $"Error getting Electron Block Custom Code from database: {ValidatedText(WarnWithoutExplanation, error)}"
+                    fieldId = ""
+                    blockId = ""
+                }}
+            | Ok result -> 
+                result
+                |> Seq.map(fun x -> 
+                    {
+                        customCode = 
+                            match x.customCode with
+                            | Some code -> code
+                            | None -> ""
+                        fieldId = x.fieldId
+                        blockId = x.blockId
+                    })
+
+        let getBlockCustomCode (codes:customCodeRecord seq) fieldId blockId =
+            let res =
+                codes 
+                |> Seq.filter(fun c -> c.fieldId = fieldId && c.blockId = blockId) 
+                |> Seq.map(fun x -> x.customCode)
+                |> Seq.tryHead
+
+            match res with
+            | None -> ValidatedText(Highlight, "No custom code used")
+            | Some res -> ValidatedText(Highlight, res)
+
         let resultsPerBeam = 
             plan.Beams
             |> Seq.filter (fun x -> not x.IsSetupField)
@@ -176,7 +214,7 @@ module StandardPractices =
                         | 0 -> None
                         | _ -> Some (
                                 x.Blocks 
-                                |> Seq.map (fun b -> $"{b.Id}\n{tab}{tab}{tab}Material: {b.AddOnMaterial.Id}\n{tab}{tab}{tab}Block transmission: %0.1f{b.TransmissionFactor*100.0}%%\n{tab}{tab}{tab}Type: {b.Type}\n{tab}{tab}{tab}Diverging Cut: {b.IsDiverging}\n{tab}{tab}{tab}Tray: {b.Tray.Id}")
+                                |> Seq.map (fun b -> $"{b.Id}\n{tab}{tab}{tab}CustomCode: {getBlockCustomCode customCodes x.Id b.Id}\n{tab}{tab}{tab}Material: {b.AddOnMaterial.Id}\n{tab}{tab}{tab}Block transmission: %0.1f{b.TransmissionFactor*100.0}%%\n{tab}{tab}{tab}Type: {b.Type}\n{tab}{tab}{tab}Diverging Cut: {b.IsDiverging}\n{tab}{tab}{tab}Tray: {b.Tray.Id}")
                                 |> String.concat $"\n{tab}{tab}")
 
                     compensator = 
