@@ -81,3 +81,19 @@ let sqlGetElectronBlockCustomCodes patId courseId planId =
         Ok customCodes
     with ex ->
         Error (ex.Message)
+
+let sqlGetDrrTemplates patId courseId planId fieldId =
+    try
+        let cmd = new SqlCommandProvider<const(SqlFile<"SQL Queries\DrrFilter.sql">.Text), connectionString>(connectionString)
+        let setupNotes =
+            cmd.Execute(patId = patId, courseId = courseId, planId = planId, fieldId = fieldId)
+            |> Seq.map (fun x -> 
+                {|
+                    fieldId = x.RadiationId
+                    drrId = x.ImageId
+                    drrFilter = x.DRRTemplateFileName
+                |})
+            |> Seq.head
+        Ok setupNotes
+    with ex ->
+        Error (ex.Message)

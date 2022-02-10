@@ -21,10 +21,10 @@
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="VMS.TPS.Common.Model.API">
-      <HintPath>..\..\..\VMS Libraries\VMS.TPS.Common.Model.API.dll</HintPath>
+      <HintPath>..\..\..\..\Desktop\VMS Libraries\VMS.TPS.Common.Model.API.dll</HintPath>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.Types">
-      <HintPath>..\..\..\VMS Libraries\VMS.TPS.Common.Model.Types.dll</HintPath>
+      <HintPath>..\..\..\..\Desktop\VMS Libraries\VMS.TPS.Common.Model.Types.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
   </ItemGroup>

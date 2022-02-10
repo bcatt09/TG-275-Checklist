@@ -112,8 +112,8 @@ module PlanChecklist =
             "Matching structures", None
             "Reference CT", None
             "Isocenter on reference image(s), 2D or 3D", None
-            "DRR association", None
-            "DRR image quality", None //Some DrrTest
+            "DRR association", Some DrrTemplates
+            "DRR image quality", None
             "Imaging technique", None
             "Imaging regimen (e.g. daily, weekly, daily followed by weekly, etc.)", None
             "Parameters and setup for specialized devices (e.g. ExacTrac, VisionRT, RPM, etc.)", None
