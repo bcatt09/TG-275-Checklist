@@ -124,6 +124,7 @@ module Update =
                         { PlanChecklist.init with
                             PlanDetails = plan
                             CategoryChecklists = fullChecklist |> createFullChecklistWithAsyncTokens plan })
+                    |> List.rev
             }, Cmd.ofMsg UpdateLoadingState
         | UpdateLoadingState ->
             (updateLoadingStates m), Cmd.ofMsg SelectLoadingChecklistItem
