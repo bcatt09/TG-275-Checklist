@@ -50,6 +50,6 @@ module Log =
                     File.Delete(GetDefaultLogPath())
 
             // Clear the log every day and save yesterday's log in case there were errors that need to be looked into
-            match File.GetLastWriteTime(GetDefaultLogPath()).Day = DateTime.Now.Day with
+            match File.GetLastWriteTime(GetDefaultLogPath()).Month = DateTime.Now.Month with
             | true -> ()
             | false -> copyOldLogAndDelete()
