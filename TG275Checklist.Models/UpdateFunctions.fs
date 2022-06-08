@@ -248,3 +248,40 @@ module UpdateFunctions =
             log.Info("")
         with ex ->
             System.Windows.MessageBox.Show($"Couldn't initialize log") |> ignore
+
+    /// <summary>
+    /// Load a new model with the target coverage statistics for the SelectedTarget being displayed
+    /// </summary>
+    let loadTargetCoverage (model: Model, planChecklist: PlanChecklist, categoryChecklist: CategoryChecklist, checklistItem: ChecklistItem, value) =
+        let targetCoverage = { checklistItem.EsapiResults.Value.TargetCoverageDropdown.Value with SelectedTarget = value }
+        let newTargetCoverage = { targetCoverage with DisplayedResults = targetCoverage.Results.[targetCoverage.SelectedTarget]}
+        let newEsapiResults = Some ({ checklistItem.EsapiResults.Value with TargetCoverageDropdown = Some newTargetCoverage })
+        // Set the ChecklistItem (Target Coverage Item) to loading
+        let newChecklistItem = { checklistItem with EsapiResults = newEsapiResults }//Loading = true; Loaded = false }
+        // Construct a new CategoryChecklist with the loading item and mark the Category as loading
+        let newCategoryChecklist = { categoryChecklist with 
+                                        //Loading = true; 
+                                        //Loaded = false; 
+                                        ChecklistItems = 
+                                            categoryChecklist.ChecklistItems 
+                                            |> List.map(fun curItem -> 
+                                                if curItem.Text = checklistItem.Text 
+                                                then newChecklistItem 
+                                                else curItem ) }
+        // Construct a new PlanChecklist with the new CategoryChecklist and mark the PlanChecklist as loading
+        let newPlanChecklist = { planChecklist with 
+                                    //Loading = true; 
+                                    //Loaded = false;
+                                    CategoryChecklists =
+                                        planChecklist.CategoryChecklists
+                                        |> List.map(fun curChecklist ->
+                                            if curChecklist.Category = categoryChecklist.Category
+                                            then newCategoryChecklist
+                                            else curChecklist) }
+        // Construct a new Model with the new PlanChecklist
+        { model with 
+            ChecklistScreenPlanChecklists = 
+                model.ChecklistScreenPlanChecklists |> List.map(fun curChecklist -> 
+                    if curChecklist.PlanDetails.CourseId = planChecklist.PlanDetails.CourseId && curChecklist.PlanDetails.PlanId = planChecklist.PlanDetails.PlanId
+                    then newPlanChecklist
+                    else curChecklist) }

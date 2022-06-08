@@ -292,7 +292,7 @@ Other Linked Plans: {linkedPlans}")
             match rx, plan with
             | "No bolus", "No bolus" -> prescriptionVsPlanOutput (ValidatedText(Pass, rx)) (ValidatedText(Pass, plan))
             | "No bolus", _ -> prescriptionVsPlanOutput (ValidatedText(Fail "Bolus used in plan was not prescribed", rx)) (ValidatedText(WarnWithoutExplanation, plan))
-            | _, "No bolus" -> prescriptionVsPlanOutput (ValidatedText(WarnWithoutExplanation, rx)) (ValidatedText(Warn "Prescribed bolus was not used in plan", rx))
+            | _, "No bolus" -> prescriptionVsPlanOutput (ValidatedText(WarnWithoutExplanation, rx)) (ValidatedText(Warn "Prescribed bolus was not used in plan", plan))
             | _, _ -> prescriptionVsPlanOutput (ValidatedText(WarnWithoutExplanation, rx)) (ValidatedText(WarnWithoutExplanation, plan))
         | Ok rx, Error plan -> prescriptionVsPlanOutput (ValidatedText(WarnWithoutExplanation, rx)) (plan)
         | Error rx, Ok plan -> prescriptionVsPlanOutput (rx) (ValidatedText(WarnWithoutExplanation, plan))

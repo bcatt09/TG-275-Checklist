@@ -149,6 +149,8 @@ module Update =
             (m |> updateModelWithLoadedEsapiResults (Some failedResult)), Cmd.ofMsg UpdateLoadingState
         | LoadingComplete ->
             { m with StatusBar = StatusBar.ready }, Cmd.none
+        | LoadTargetCoverage (model, planChecklist, categoryChecklist, checklistItem, target) ->
+            loadTargetCoverage (model, planChecklist, categoryChecklist, checklistItem, target), Cmd.ofMsg LoadingComplete
 
 
 
