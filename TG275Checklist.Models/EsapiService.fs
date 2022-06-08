@@ -6,6 +6,8 @@ open System.Threading.Tasks
 open System.Threading.Tasks.Schedulers
 open VMS.TPS.Common.Model.API
 
+open HelperDataTypes
+
 [<AutoOpen>]
 module EsapiService =
 
@@ -47,6 +49,7 @@ module EsapiService =
         {
             Text: string
             TreatmentAppointments: List<TreatmentAppointmentInfo> option
+            TargetCoverageDropdown: TargetCoverageDropdown option
             //OtherThingsToDisplay1: 'a option
             //OtherThingsToDisplay2: 'a option
         }
@@ -54,11 +57,11 @@ module EsapiService =
             { 
                 Text = ""
                 TreatmentAppointments = None
+                TargetCoverageDropdown = None
             }
         static member fromString str = { EsapiResults.init with Text = str }
 
     type PureEsapiFunction = PlanSetup -> EsapiResults
-    type EsapiChecklistFunction = PlanInfo -> Async<EsapiResults>
 
     let runEsapiFunction planDetails (esapiFunc: PureEsapiFunction option) =
         async {
@@ -71,8 +74,25 @@ module EsapiService =
                         |> Seq.concat
                         |> Seq.filter(fun p -> p.Id = planDetails.PlanId && p.Course.Id = planDetails.CourseId)
                         |> Seq.exactlyOne
-                    func plan
-                )
+                    func plan)
+
                 return Some result
+
             | None -> return None
+        }
+
+    type MiscEsapiFunction = PlanSetup -> string -> string
+
+    let getMiscEsapiResults planDetails input (esapiFunc: MiscEsapiFunction) =
+        async {
+            let! result = esapi.Run(fun (pat: Patient) ->
+                let plan = 
+                    pat.Courses
+                    |> Seq.map(fun c -> c.PlanSetups |> Seq.cast<PlanSetup>)
+                    |> Seq.concat
+                    |> Seq.filter(fun p -> p.Id = planDetails.PlanId && p.Course.Id = planDetails.CourseId)
+                    |> Seq.exactlyOne
+                esapiFunc plan input)
+
+            return result
         }

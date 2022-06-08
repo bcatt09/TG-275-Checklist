@@ -6,6 +6,8 @@ open Model
 open PatientSetupTypes
 open ChecklistTypes
 open type System.Windows.Visibility
+open NLog.Targets
+open Elmish.WPF
 
 module Bindings =
 
@@ -53,16 +55,54 @@ module Bindings =
                 | None -> None
                 | Some result -> //result.TreatmentAppointments)
                     match result.TreatmentAppointments with
-                    | Some appts -> Some (ResizeArray<System.DateTime> (appts |> List.map(fun x -> x.ApptTime)))  // Convert to System.Collections.Generic.List for use in C# XMAL Converter
+                    | Some appts -> Some (ResizeArray<System.DateTime> (appts |> List.map(fun x -> x.ApptTime)))  // Convert to System.Collections.Generic.List for use in C# XAML Converter
                     | None -> None)
             "TreatmentAppointments" |> Binding.oneWayOpt (fun (_, item) ->
                 match item.EsapiResults with
                 | None -> None
-                | Some result -> //result.TreatmentAppointments)
+                | Some result ->
                     match result.TreatmentAppointments with
-                    | Some appts -> Some (ResizeArray<TreatmentAppointmentInfo> appts)  // Convert to System.Collections.Generic.List for use in C# XMAL Converter
+                    | Some appts -> Some (ResizeArray<TreatmentAppointmentInfo> appts)  // Convert to System.Collections.Generic.List for use in C# XAML Converter
                     | None -> None)
+            "TargetDropDown" |> Binding.oneWayOpt (fun (_, item) ->
+                match item.EsapiResults with
+                | None -> None
+                | Some result ->
+                    match result.TargetCoverageDropdown with
+                    | Some targetCoverageDropdown -> Some (ResizeArray<string> targetCoverageDropdown.TargetList)                                  
+                    | None -> None)
+            "SelectedTarget" |> Binding.twoWay (
+                (fun (_, item) ->
+                    match item.EsapiResults with
+                    | None -> ""
+                    | Some result ->
+                        match result.TargetCoverageDropdown with
+                        | Some targetCoverageDropdown -> targetCoverageDropdown.SelectedTarget
+                        | None -> ""),
+                (fun value (m, item:ChecklistItem) -> 
+                    match item.EsapiResults with
+                    | None -> LoadingComplete
+                    | Some result ->
+                        match result.TargetCoverageDropdown with
+                        | None -> LoadingComplete
+                        | Some _ -> LoadTargetCoverage (fst (fst m), snd (fst m), snd m, item, value)))
+            "DisplayedResults" |> Binding.oneWayOpt (fun (_, item) ->
+                match item.EsapiResults with
+                | None -> None
+                | Some result ->
+                    match result.TargetCoverageDropdown with
+                    | None -> None
+                    | Some targetCoverageDropdown -> Some targetCoverageDropdown.DisplayedResults)
         ]
+
+    let a =
+        (fun (_, item) ->
+                    match item.EsapiResults with
+                    | None -> None
+                    | Some result ->
+                        match result.TargetCoverageDropdown with
+                        | Some targetCoverageDropdown -> Some targetCoverageDropdown.SelectedTarget
+                        | None -> None)
 
     let checklistBindings () : Binding<(Model * PlanChecklist) * CategoryChecklist, Msg> list =
         [

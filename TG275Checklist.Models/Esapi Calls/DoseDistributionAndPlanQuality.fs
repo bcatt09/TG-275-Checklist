@@ -5,6 +5,8 @@ open VMS.TPS.Common.Model.API
 open VMS.TPS.Common.Model.Types
 open CommonHelpers
 open TG275Checklist.Model.EsapiService
+open TG275Checklist.Model.HelperDataTypes
+open System.Collections.Generic
 
 module DoseDistributionAndPlanQuality =
 
@@ -14,8 +16,8 @@ module DoseDistributionAndPlanQuality =
     | Min
     | Max
 
-    let targetDose constraintType (plan: PlanSetup) = 
-        match getTargetStructure plan with
+    let coverageStatistics (structure: Structure option) constraintType (plan: PlanSetup) = 
+        match structure with
         | None -> ValidatedText(WarnWithoutExplanation, "No plan target").ToString()
         | Some target -> 
             match constraintType with
@@ -23,27 +25,62 @@ module DoseDistributionAndPlanQuality =
             | Max -> $"%0.1f{plan.GetDoseAtVolume(target, 0.0, VolumePresentation.Relative, DoseValuePresentation.Relative).Dose}%%"
             | DoseToVolume vol -> $"%0.1f{plan.GetDoseAtVolume(target, vol, VolumePresentation.Relative, DoseValuePresentation.Relative).Dose}%%"
             | VolumeAtDose dose -> $"%0.1f{plan.GetVolumeAtDose(target, dose, VolumePresentation.Relative)}%%"
-    
+
+    let targetDose constraintType (plan: PlanSetup) = 
+        coverageStatistics (getTargetStructure plan) constraintType plan
 
     let getTargetCoverage: EsapiCall = fun plan ->
-        match getTargetStructure plan with
-        | None -> "No plan target"
-        | Some target -> 
-            sprintf "Target: %s\n%sMin = %s\n%sV95%% = %s\n%sV100%% = %s\n%sV105%% = %s\n%sV110%% = %s\n%sMax = %s"
-                target.Id
-                tab
-                (targetDose Min plan)
-                tab
-                (targetDose (VolumeAtDose (new DoseValue(95.0, "%"))) plan)
-                tab
-                (targetDose (VolumeAtDose (new DoseValue(100.0, "%"))) plan)
-                tab
-                (targetDose (VolumeAtDose (new DoseValue(105.0, "%"))) plan)
-                tab
-                (targetDose (VolumeAtDose (new DoseValue(110.0, "%"))) plan)
-                tab 
-                (targetDose Max plan)
-        |> EsapiResults.fromString
+        let targetTypeFilterList = ["BODY"; "EXTERNAL"; "SUPPORT"; "FIXATION"; "MARKER"; "AVOIDANCE"]
+        let strucIds = 
+            plan.StructureSet.Structures
+            |> Seq.filter(fun s -> not (List.contains s.DicomType targetTypeFilterList))
+            |> Seq.map(fun s -> s.Id)
+        let resultsDict = 
+            strucIds 
+            |> Seq.map(fun x -> x, 
+                                match getStructureById plan x with 
+                                | None -> "No target structure selected" 
+                                | target -> 
+                                    sprintf "Min = %s\nD95%% = %s\nV95%% = %s\nV100%% = %s\nV105%% = %s\nV110%% = %s\nMax = %s"
+                                        (coverageStatistics target Min plan)
+                                        (coverageStatistics target (DoseToVolume 0.95) plan)
+                                        (coverageStatistics target (VolumeAtDose (new DoseValue(95.0, "%"))) plan)
+                                        (coverageStatistics target (VolumeAtDose (new DoseValue(100.0, "%"))) plan)
+                                        (coverageStatistics target (VolumeAtDose (new DoseValue(105.0, "%"))) plan)
+                                        (coverageStatistics target (VolumeAtDose (new DoseValue(110.0, "%"))) plan)
+                                        (coverageStatistics target Max plan) ) 
+            |> dict 
+            |> Dictionary
+        { EsapiResults.init with 
+            TargetCoverageDropdown = 
+                Some {
+                    TargetList = strucIds |> Seq.toList
+                    SelectedTarget = plan.TargetVolumeID
+                    Results = resultsDict
+                    DisplayedResults =
+                        match plan.TargetVolumeID with
+                        | "" -> "No target structure selected"
+                        | target -> resultsDict.[target] } }
+
+    //let getTargetCoverage: EsapiCall = fun plan ->
+    //    match getTargetStructure plan with
+    //    | None -> "No plan target"
+    //    | Some target -> 
+    //        sprintf "Target: %s\n%sMin = %s\n%sV95%% = %s\n%sV100%% = %s\n%sV105%% = %s\n%sV110%% = %s\n%sMax = %s"
+    //            target.Id
+    //            tab
+    //            (targetDose Min plan)
+    //            tab
+    //            (targetDose (VolumeAtDose (new DoseValue(95.0, "%"))) plan)
+    //            tab
+    //            (targetDose (VolumeAtDose (new DoseValue(100.0, "%"))) plan)
+    //            tab
+    //            (targetDose (VolumeAtDose (new DoseValue(105.0, "%"))) plan)
+    //            tab
+    //            (targetDose (VolumeAtDose (new DoseValue(110.0, "%"))) plan)
+    //            tab 
+    //            (targetDose Max plan)
+    //    |> EsapiResults.fromString
 
     let getOARMaxDoses: EsapiCall = fun plan ->
         let OARTypes = [ "AVOIDANCE"; "CAVITY"; "ORGAN" ]

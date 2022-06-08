@@ -101,6 +101,20 @@
                                                            DockPanel.Dock="Top"
                                                            Margin="0,2"/>
                                                 <!--#endregion-->
+                                                <!--#region Target Dropdown-->
+                                                <ComboBox ItemsSource="{Binding TargetDropDown}" 
+                                                          SelectedItem="{Binding SelectedTarget}"  
+                                                          Width="125"
+                                                          DockPanel.Dock="Top"
+                                                          HorizontalAlignment="Left"
+                                                          Visibility="{Binding TargetDropDown, Converter={StaticResource NullableToVisibilityConverter}}"
+                                                          Margin="10,2"/>
+                                                <TextBlock Text="{Binding DisplayedResults}" 
+                                                           DockPanel.Dock="Top"
+                                                           Visibility="{Binding TargetDropDown, Converter={StaticResource NullableToVisibilityConverter}}" 
+                                                           Foreground="{StaticResource MahApps.Brushes.AccentBase}"
+                                                           Margin="10,2"/>
+                                                <!--#endregion-->
                                                 <!--#region Treatment Appointment Calendar-->
                                                 <Calendar Visibility="{Binding TreatmentAppointments, Converter={StaticResource NullableToVisibilityConverter}}"
                                                           DockPanel.Dock="Right">

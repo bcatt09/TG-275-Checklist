@@ -1,6 +1,8 @@
 ﻿namespace TG275Checklist.Model
 
 open System
+open VMS.TPS.Common.Model.API
+open System.Collections.Generic
 
 [<AutoOpen>]
 module HelperDataTypes =
@@ -24,3 +26,12 @@ module HelperDataTypes =
                 let G = byteString.Substring(2, 2)
                 let B = byteString.Substring(0, 2)
                 $"#{R}{G}{B}"
+
+    // Target coverage statistics checklist item
+    type TargetCoverageDropdown =
+        {
+            TargetList: string list
+            SelectedTarget: string
+            Results: Dictionary<string, string>
+            DisplayedResults: string
+        }

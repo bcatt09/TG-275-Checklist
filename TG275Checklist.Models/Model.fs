@@ -56,6 +56,7 @@ module Model =
         | LoadChecklistItemSuccess of EsapiResults option
         | LoadChecklistItemFailure of exn
         | LoadingComplete
+        | LoadTargetCoverage of Model * PlanChecklist * CategoryChecklist * ChecklistItem * string
 
 
         | Debugton

@@ -75,6 +75,11 @@ module CommonHelpers =
         |> Seq.filter (fun x -> x.Id = plan.TargetVolumeID)
         |> Seq.tryExactlyOne
 
+    let getStructureById (plan: PlanSetup) structureId =
+        plan.StructureSet.Structures
+        |> Seq.filter (fun x -> x.Id = structureId)
+        |> Seq.tryExactlyOne
+
     let getSetupNotesAsList (plan: PlanSetup) =
         let setupNotes = sqlGetSetupNotes plan.Course.Patient.Id plan.Course.Id plan.Id
         match setupNotes with
