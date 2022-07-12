@@ -35,3 +35,10 @@ module HelperDataTypes =
             Results: Dictionary<string, string>
             DisplayedResults: string
         }
+
+    // Available properties for prescribed imaging modalities
+    type PrescribedImagingProperties = 
+        | TimePoint
+        | Frequency
+        | Other
+        | Unknown

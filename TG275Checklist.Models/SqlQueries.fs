@@ -38,6 +38,85 @@ let sqlGetRxFrequency patId planId courseId =
     with ex ->
         Error (ex.Message)
 
+let sqlGetPrescribedImaging patId planId courseId =
+    try
+        let cmd = new SqlCommandProvider<const(SqlFile<"SQL Queries\PrescribedImaging.sql">.Text), connectionString>(connectionString)
+
+        let rxFrequencyFromSQL = 
+            cmd.Execute(patId = patId, planId = planId, courseId = courseId)
+            |> Seq.map (fun x -> 
+                {|
+                    Imaging = x.Imaging
+                    SerialNum = x.SerialNum
+                    Type =
+                        match x.NoteType with
+                        | 6s -> TimePoint
+                        | 8s -> Frequency
+                        | 2s -> Other
+                        | _ -> Unknown
+                    Value = x.NoteValue
+                |})
+            |> Seq.toList
+
+        // Find all serial numbers (which equates to individual modality entries)
+        let serials = 
+            rxFrequencyFromSQL
+            |> Seq.distinctBy(fun x -> x.SerialNum)
+            |> Seq.map(fun x -> x.SerialNum)
+            |> Seq.toList
+
+        // List for results grouped by serial number
+        let rxFrequency =
+            serials
+            |> List.map(fun ser ->
+                let imaging = 
+                    (rxFrequencyFromSQL 
+                    |> List.filter(fun x -> x.SerialNum = ser)
+                    |> List.head).Imaging
+                let timepoint =
+                    rxFrequencyFromSQL 
+                    |> List.filter(fun x -> x.SerialNum = ser && x.Type = TimePoint)
+                    |> List.tryHead
+                    |> Option.bind(fun x -> Some x.Value)
+                let frequency =
+                    rxFrequencyFromSQL 
+                    |> List.filter(fun x -> x.SerialNum = ser && x.Type = Frequency)
+                    |> List.tryHead
+                    |> Option.bind(fun x -> 
+                        match x.Value with
+                        | "7" -> "Treatment"
+                        | "0" -> "Monday"
+                        | "1" -> "Tuesday"
+                        | "2" -> "Wednesday"
+                        | "3" -> "Thursday"
+                        | "4" -> "Friday"
+                        | "5" -> "Saturday"
+                        | "6" -> "Sunday"
+                        | value -> $"Unknown value ({value})"
+                        |> Some)
+                let other =
+                    rxFrequencyFromSQL 
+                    |> List.filter(fun x -> x.SerialNum = ser && x.Type = Other)
+                    |> List.tryHead
+                    |> Option.bind(fun x -> Some x.Value)
+                let unknown =
+                    rxFrequencyFromSQL 
+                    |> List.filter(fun x -> x.SerialNum = ser && x.Type = Unknown)
+                    |> List.tryHead
+                    |> Option.bind(fun x -> Some x.Value)
+                {|
+                    Imaging = imaging
+                    TimePoint = timepoint
+                    Frequency = frequency
+                    Other = other
+                    Unknown = unknown
+                |}
+            )
+
+        Ok rxFrequency
+    with ex ->
+        Error (ex.Message)
+
 let sqlGetScheduledActivities patId =
     try
         let cmd = new SqlCommandProvider<const(SqlFile<"SQL Queries\ScheduledActivities.sql">.Text), connectionString>(connectionString)

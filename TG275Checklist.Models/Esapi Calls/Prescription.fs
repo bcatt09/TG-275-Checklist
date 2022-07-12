@@ -9,13 +9,20 @@ open TG275Checklist.Model.EsapiService
 
 module Prescription =
 
+    /// <summary>
+    /// Default error is there is no prescription linked to the plan
+    /// </summary>
     let checkForPrescription (rx: RTPrescription) predicate =
         if isNull rx
         then Error (ValidatedText(Fail "No prescription linked to plan", "Error"))
         else Ok predicate
 
+    /// <summary>
+    /// Default formatting of results for a Prescription vs Plan check
+    /// </summary>
     let prescriptionVsPlanOutput rx plan = EsapiResults.fromString $"Prescription:\n{tab}{rx}\nPlan:\n{tab}{plan}"
 
+    // Active pattern to detect a photon or electron plan
     let (|Photon|Electron|Unknown|) (energy: string) =
         if energy.Contains("X") then Photon
         else if energy.ToUpper().Contains("E") then Electron

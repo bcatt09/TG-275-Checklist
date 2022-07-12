@@ -16,6 +16,7 @@ module DoseDistributionAndPlanQuality =
     | Min
     | Max
 
+    // Get target coverage statistics for a given Structure
     let coverageStatistics (structure: Structure option) constraintType (plan: PlanSetup) = 
         match structure with
         | None -> ValidatedText(WarnWithoutExplanation, "No plan target").ToString()
@@ -26,9 +27,11 @@ module DoseDistributionAndPlanQuality =
             | DoseToVolume vol -> $"%0.1f{plan.GetDoseAtVolume(target, vol, VolumePresentation.Relative, DoseValuePresentation.Relative).Dose}%%"
             | VolumeAtDose dose -> $"%0.1f{plan.GetVolumeAtDose(target, dose, VolumePresentation.Relative)}%%"
 
+    // Get coverage statistics for plan target
     let targetDose constraintType (plan: PlanSetup) = 
         coverageStatistics (getTargetStructure plan) constraintType plan
 
+    // Calculate coverage statistics for a subset of Structures, which will be selected from a dropdown
     let getTargetCoverage: EsapiCall = fun plan ->
         let targetTypeFilterList = ["BODY"; "EXTERNAL"; "SUPPORT"; "FIXATION"; "MARKER"; "AVOIDANCE"]
         let strucIds = 
@@ -61,26 +64,6 @@ module DoseDistributionAndPlanQuality =
                         match plan.TargetVolumeID with
                         | "" -> "No target structure selected"
                         | target -> resultsDict.[target] } }
-
-    //let getTargetCoverage: EsapiCall = fun plan ->
-    //    match getTargetStructure plan with
-    //    | None -> "No plan target"
-    //    | Some target -> 
-    //        sprintf "Target: %s\n%sMin = %s\n%sV95%% = %s\n%sV100%% = %s\n%sV105%% = %s\n%sV110%% = %s\n%sMax = %s"
-    //            target.Id
-    //            tab
-    //            (targetDose Min plan)
-    //            tab
-    //            (targetDose (VolumeAtDose (new DoseValue(95.0, "%"))) plan)
-    //            tab
-    //            (targetDose (VolumeAtDose (new DoseValue(100.0, "%"))) plan)
-    //            tab
-    //            (targetDose (VolumeAtDose (new DoseValue(105.0, "%"))) plan)
-    //            tab
-    //            (targetDose (VolumeAtDose (new DoseValue(110.0, "%"))) plan)
-    //            tab 
-    //            (targetDose Max plan)
-    //    |> EsapiResults.fromString
 
     let getOARMaxDoses: EsapiCall = fun plan ->
         let OARTypes = [ "AVOIDANCE"; "CAVITY"; "ORGAN" ]

@@ -115,7 +115,7 @@ module PlanChecklist =
             "DRR association", Some DrrTemplates
             "DRR image quality", None
             "Imaging technique", None
-            "Imaging regimen (e.g. daily, weekly, daily followed by weekly, etc.)", None
+            "Imaging regimen (e.g. daily, weekly, daily followed by weekly, etc.)", Some PrescribedImaging
             "Parameters and setup for specialized devices (e.g. ExacTrac, VisionRT, RPM, etc.)", None
             "Isocenter for specialized devices (e.g. VisionRT, ExacTrac, etc.)", None
         ] |> createCategoryChecklist ImageGuidanceSetup

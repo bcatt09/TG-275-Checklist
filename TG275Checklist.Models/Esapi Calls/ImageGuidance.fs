@@ -20,3 +20,27 @@ module ImageGuidance =
 {tab}{match info.drrFilter with | None -> "None" | Some filter -> filter}""")
         |> String.concat "\n"
         |> EsapiResults.fromString
+
+    let PrescribedImaging: EsapiCall = fun plan ->
+        let rxImaging = sqlGetPrescribedImaging plan.Course.Patient.Id plan.Id plan.Course.Id
+
+        match rxImaging with
+        | Error error -> error
+        | Ok imaging ->
+            imaging
+            |> Seq.map(fun x -> $"{x.Imaging}" +
+                                (match x.TimePoint with
+                                | None -> ""
+                                | Some value -> $"\n{tab}{value}") +
+                                (match x.Frequency with
+                                | None -> ""
+                                | Some value -> $"\n{tab}Every {value}") +
+                                (match x.Other with
+                                | None -> ""
+                                | Some value -> $"\n{tab}Other: {value}") +
+                                (match x.Unknown with
+                                | None -> ""
+                                | Some value -> $"\n{tab}Unknown value found:\n{tab}{tab}{value}"))
+
+            |> String.concat "\n"
+        |> EsapiResults.fromString
