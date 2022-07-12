@@ -43,7 +43,7 @@ module DoseDistributionAndPlanQuality =
                                 | target -> 
                                     sprintf "Min = %s\nD95%% = %s\nV95%% = %s\nV100%% = %s\nV105%% = %s\nV110%% = %s\nMax = %s"
                                         (coverageStatistics target Min plan)
-                                        (coverageStatistics target (DoseToVolume 0.95) plan)
+                                        (coverageStatistics target (DoseToVolume 95.0) plan)
                                         (coverageStatistics target (VolumeAtDose (new DoseValue(95.0, "%"))) plan)
                                         (coverageStatistics target (VolumeAtDose (new DoseValue(100.0, "%"))) plan)
                                         (coverageStatistics target (VolumeAtDose (new DoseValue(105.0, "%"))) plan)
