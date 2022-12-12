@@ -3,7 +3,7 @@
 open FSharp.Data
 open TG275Checklist.Model
 
-let [<Literal>] private connectionString = "Data Source=10.71.248.60;Initial Catalog=VARIAN;User ID=reports;Password=R3p0rtsUs3r"
+let [<Literal>] private connectionString = DatabaseConnectionString.ariaConnectionString
 
 let sqlGetOncologist patId =
     try

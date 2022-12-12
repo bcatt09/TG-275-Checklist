@@ -55,7 +55,7 @@ module StandardPractices =
                     x.Id
                     tab
                     (match x.GantryDirection with 
-                        | GantryDirection.None -> sprintf "%0.1f%s" (x.GantryAngleToUser((x.ControlPoints |> Seq.head).GantryAngle)) (if x.IsGantryExtended then "E" else "")
+                        | GantryDirection.None -> sprintf "%0.1f%s" (x.GantryAngleToUser((x.ControlPoints |> Seq.head).GantryAngle)) ""//(if x.IsGantryExtended then "E" else "")
                         | dir -> sprintf "%0.1f -> %0.1f (%A)" (x.ControlPoints |> Seq.head).GantryAngle (x.ControlPoints |> Seq.last).GantryAngle dir)
                     tab
                     (x.CollimatorAngleToUser((x.ControlPoints |> Seq.head).CollimatorAngle))
