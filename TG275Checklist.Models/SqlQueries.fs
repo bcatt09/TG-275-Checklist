@@ -127,6 +127,7 @@ let sqlGetScheduledActivities patId =
                     ApptTime = x.ScheduledStartTime.Value
                     ApptName = x.ActivityCode
                     ApptColor = TreatmentAppointmentInfo.ConvertFromAriaColor (try x.ForeGroundColor.Value with ex -> ([|byte 255; byte 255; byte 255|]))
+                    ApptResource = x.ResourceName
                 })
         Ok scheduledActivities
     with ex ->

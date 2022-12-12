@@ -13,6 +13,7 @@ module HelperDataTypes =
             ApptTime: DateTime
             ApptName: string
             ApptColor: string
+            ApptResource: string
         }
         static member ConvertFromAriaColor (color: byte[]) =
             let byteString = BitConverter.ToString(color).Replace("-", "")

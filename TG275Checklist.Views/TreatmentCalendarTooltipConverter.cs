@@ -22,7 +22,7 @@ namespace TG275Checklist.Views
             foreach (var apptDate in appts)
                 if (apptDate.ApptTime.Date == date.Date)
                 {
-                    var text = $"{apptDate.ApptName} - {apptDate.ApptTime.ToShortTimeString()}";
+                    var text = $"{apptDate.ApptName} - {apptDate.ApptTime.ToShortTimeString()}\n{apptDate.ApptResource}";
 
                     if (tooltip == "")
                         tooltip = text;

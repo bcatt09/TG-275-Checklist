@@ -92,7 +92,7 @@ Other Linked Plans: {linkedPlans}")
                 |}
         
         let planApproval = 
-            match plan.ApprovalHistory |> Seq.filter (fun h -> h.ApprovalStatus = PlanSetupApprovalStatus.Reviewed) |> Seq.tryHead with
+            match plan.ApprovalHistory |> Seq.filter (fun h -> h.ApprovalStatus = PlanSetupApprovalStatus.PlanningApproved) |> Seq.tryHead with
             | Some approval -> 
                 Ok {|
                     Status = approval.ApprovalStatus.ToString()
@@ -100,7 +100,7 @@ Other Linked Plans: {linkedPlans}")
                     Id = approval.UserId
                     DateTime = approval.ApprovalDateTime
                 |}
-            | None -> Error (ValidatedText(Fail "Plan has not been marked Reviewed by physician", "Error"))
+            | None -> Error (ValidatedText(Fail "Has not been marked Planning Approved by physician", "Error"))
 
         match rxApproval, planApproval with
         | Ok rx, Ok plan -> 

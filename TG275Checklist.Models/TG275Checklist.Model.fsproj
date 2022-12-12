@@ -4,7 +4,9 @@
 
     <Platforms>AnyCPU;x64</Platforms> 
 
-    <AssemblyName>Physics-Check.Model</AssemblyName>
+    <AssemblyName>Physics-Check.Model</AssemblyName> 
+
+    <UserSecretsId>a84e86e5-fba1-46dd-880e-8db0f55cc592</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +19,8 @@
     <None Include="SQL Queries\PrescribedFrequency.sql" />
     <None Include="SQL Queries\ScheduledActivities.sql" />
     <None Include="SQL Queries\SetupNotes.sql" />
+    <Compile Include="DatabaseConnectionString.fs" />
+    <Compile Include="DatabaseConnectionStringExample.fs" />
     <Compile Include="Log.fs" />
     <Compile Include="CommonTypes.fs" />
     <Compile Include="HelperDataTypes.fs" />
