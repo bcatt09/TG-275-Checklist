@@ -176,14 +176,26 @@ Other Linked Plans: {linkedPlans}")
                             patientAppts 
                             |> Seq.countBy(fun x -> x.ApptTime.Date)
                             |> Seq.filter(fun x -> snd x > 1)
-                        sprintf "%A%s\n%s"
+                        let machineAppts =
+                            patientAppts
+                            |> Seq.countBy(fun x -> x.ApptResource)
+                        let machineApptList = 
+                            machineAppts 
+                            |> Seq.map(fun (x,y) -> $"{x} - {y} appointments")
+                            |> String.concat "\n"
+                        sprintf "%A%s\n%s\n\n%s"
                             (ValidatedText(getPassWarn "Scheduled number of fractions doesn't match plan" (numScheduled = plan.NumberOfFractions.GetValueOrDefault()), $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-1).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}"))
-                            (if Seq.length bidDays > 1
+                            (if Seq.length bidDays > 0
                                 then 
                                     sprintf "\n%sDays with multiple appointments (Mouse over calendar to the right to check):\n%A" tab (ValidatedText(WarnWithoutExplanation, (bidDays |> Seq.map(fun x -> $"{tab}{tab}{(fst x).ToShortDateString()} - {snd x} appointments") |> String.concat "\n")))
                                 else
                                     "")
-                            $"{tab}(Machine appointments only, doesn't account primary vs boost, V-sim, or previous courses)"
+                            $"{tab}(Raw machine appointments only, doesn't account for primary vs boost, V-sim, or previous courses)"
+                            (if Seq.length machineAppts > 1
+                                then
+                                    machineApptList
+                                else
+                                    $"All appointments scheduled on {fst (machineAppts |> Seq.head)}")
            
                 // Format output
                 match rxText with

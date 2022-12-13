@@ -125,7 +125,10 @@ let sqlGetScheduledActivities patId =
             |> Seq.map (fun x -> 
                 {
                     ApptTime = x.ScheduledStartTime.Value
-                    ApptName = x.ActivityCode
+                    ApptName = 
+                        match x.Description with
+                        | Some desc -> desc
+                        | None -> x.ActivityCode
                     ApptColor = TreatmentAppointmentInfo.ConvertFromAriaColor (try x.ForeGroundColor.Value with ex -> ([|byte 255; byte 255; byte 255|]))
                     ApptResource = x.ResourceName
                 })
