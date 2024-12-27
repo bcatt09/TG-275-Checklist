@@ -10,6 +10,7 @@ open ChecklistFunctions
 open PlanChecklist
 open UpdateFunctions
 open TG275Checklist.EsapiCalls
+open TG275Checklist.Log
 
 open type System.Windows.Visibility
 open FSharp.Data
@@ -17,7 +18,7 @@ open FSharp.Data
 module Update =
 
     let update msg m =
-        let log = NLog.LogManager.GetCurrentClassLogger()
+        let log = PVH_Logger.Logger
         
         match msg with
 
@@ -142,8 +143,8 @@ module Update =
             | Some (_, cat, item) ->
                 let func = item.Function.Value.ToString()
                 match func.IndexOf('+') with
-                | -1 -> log.Error(ex, func)
-                | i -> log.Error(ex, func.Substring(i+1))
+                | -1 -> log.LogError(ex, func)
+                | i -> log.LogError(ex, func.Substring(i+1))
             | None -> ()
             let failedResult = { EsapiResults.init with Text = ValidatedText(Fail "Couldn't process results", "Error").ToString()}
             (m |> updateModelWithLoadedEsapiResults (Some failedResult)), Cmd.ofMsg UpdateLoadingState

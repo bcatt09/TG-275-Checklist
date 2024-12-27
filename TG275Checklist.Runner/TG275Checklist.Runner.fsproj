@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <AssemblyName>Physics-Check.esapi</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
@@ -14,19 +14,26 @@
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="Costura.Fody" Version="4.1.0" />
-    <PackageReference Include="NLog" Version="4.7.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TG275Checklist.Log\TG275Checklist.Log.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="VMS.TPS.Common.Model.API">
-      <HintPath>..\..\..\Varian Libraries 15.6\VMS.TPS.Common.Model.API.dll</HintPath>
+      <HintPath>\\homedirs.uch.ad.pvt\cattbe\Coding\source\Varian Libraries 18.1\VMS.TPS.Common.Model.API.dll</HintPath>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.Types">
-      <HintPath>..\..\..\Varian Libraries 15.6\VMS.TPS.Common.Model.Types.dll</HintPath>
+      <HintPath>\\homedirs.uch.ad.pvt\cattbe\Coding\source\Varian Libraries 18.1\VMS.TPS.Common.Model.Types.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="8.0.100" />
   </ItemGroup>
 
 </Project>

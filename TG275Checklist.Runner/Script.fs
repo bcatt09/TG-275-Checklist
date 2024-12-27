@@ -1,6 +1,7 @@
 ﻿namespace VMS.TPS
 
 open System.Diagnostics
+open System.IO
 open System.Reflection
 open System.Windows
 open VMS.TPS.Common.Model.API
@@ -8,6 +9,9 @@ open VMS.TPS.Common.Model.API
 type Script () =
 
     member this.Execute (context:ScriptContext) =
+
+        // Initialize logger
+        //TG275Checklist.Log.PVH_Logger.Logger.Initialize("Physics-Check", context, Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location))
 
         let fullAssemblyName = Assembly.GetExecutingAssembly().Location
         let minusExtension = fullAssemblyName.[0..fullAssemblyName.Length-11]

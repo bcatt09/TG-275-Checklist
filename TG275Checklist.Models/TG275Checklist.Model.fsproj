@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework> 
+    <TargetFramework>net48</TargetFramework> 
 
     <Platforms>AnyCPU;x64</Platforms> 
 
@@ -24,11 +24,8 @@
     <Compile Include="Log.fs" />
     <Compile Include="CommonTypes.fs" />
     <Compile Include="HelperDataTypes.fs" />
-    <Compile Include="EsapiService.fs" />
     <Compile Include="SqlQueries.fs" />
-    <Compile Include="PatientSetupTypes.fs" />
-    <Compile Include="ChecklistTypes.fs" />
-    <Compile Include="ChecklistFunctions.fs" />
+    <Compile Include="EsapiService.fs" />
     <Compile Include="Esapi Calls\CommonHelpers.fs" />
     <Compile Include="Esapi Calls\Prescription.fs" />
     <Compile Include="Esapi Calls\Simulation.fs" />
@@ -39,6 +36,9 @@
     <Compile Include="Esapi Calls\Isocenter.fs" />
     <Compile Include="Esapi Calls\ImageGuidance.fs" />
     <Compile Include="Esapi Calls\Scheduling.fs" />
+    <Compile Include="PatientSetupTypes.fs" />
+    <Compile Include="ChecklistTypes.fs" />
+    <Compile Include="ChecklistFunctions.fs" />
     <Compile Include="StructureChecksTESTING.fs" />
     <Compile Include="PlanChecklist.fs" />
     <Compile Include="Model.fs" />
@@ -52,16 +52,23 @@
     <PackageReference Include="Elmish.WPF" Version="3.5.6" />
     <PackageReference Include="FSharp.Data" Version="4.1.0" />
     <PackageReference Include="FSharp.Data.SqlClient" Version="2.0.7" />
-    <PackageReference Include="NLog" Version="4.7.6" />
     <PackageReference Include="ParallelExtensionsExtras" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TG275Checklist.Log\TG275Checklist.Log.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="VMS.TPS.Common.Model.API">
-      <HintPath>..\..\..\Varian Libraries 15.6\VMS.TPS.Common.Model.API.dll</HintPath>
+      <HintPath>\\homedirs.uch.ad.pvt\cattbe\Coding\source\Varian Libraries 18.1\VMS.TPS.Common.Model.API.dll</HintPath>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.Types">
-      <HintPath>..\..\..\Varian Libraries 15.6\VMS.TPS.Common.Model.Types.dll</HintPath>
+      <HintPath>\\homedirs.uch.ad.pvt\cattbe\Coding\source\Varian Libraries 18.1\VMS.TPS.Common.Model.Types.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="8.0.100" />
   </ItemGroup>
 </Project>

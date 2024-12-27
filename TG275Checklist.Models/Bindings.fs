@@ -6,7 +6,6 @@ open Model
 open PatientSetupTypes
 open ChecklistTypes
 open type System.Windows.Visibility
-open NLog.Targets
 open Elmish.WPF
 
 module Bindings =

@@ -6,6 +6,7 @@ open PatientSetupTypes
 open ChecklistTypes
 
 open TG275Checklist.Sql
+open TG275Checklist.Log
 open FSharp.Data
 
 open VMS.TPS.Common.Model.API
@@ -231,12 +232,13 @@ module UpdateFunctions =
         { model with ChecklistScreenPlanChecklists = newPlans }
         
     /// <summary>
-    /// Initialize NLog loging
+    /// Initialize logger
     /// </summary>
     let startLog (model: Model) =
         try
-            let log = NLog.LogManager.GetCurrentClassLogger()
-            TG275Checklist.Log.Log.Initialize(
+            let log = PVH_Logger.Logger
+            log.Initialize(
+                "Physics-Check",
                 model.SharedInfo.CurrentUser, 
                 model.SharedInfo.PatientName, 
                 model.PatientSetupScreenCourses 
@@ -244,10 +246,12 @@ module UpdateFunctions =
                     c.Plans 
                     |> List.filter (fun p -> p.IsChecked)
                     |> List.map (fun p -> $"{p.PlanId} ({p.CourseId})"))
-                |> List.concat)
-            log.Info("")
+                |> List.concat
+                |> String.concat ",",
+                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location))
+            log.Log()
         with ex ->
-            System.Windows.MessageBox.Show($"Couldn't initialize log") |> ignore
+            System.Windows.MessageBox.Show("Couldn't initialize log") |> ignore
 
     /// <summary>
     /// Load a new model with the target coverage statistics for the SelectedTarget being displayed
