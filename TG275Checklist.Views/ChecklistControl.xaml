@@ -14,7 +14,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
-                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Cyan.xaml" />
+                <ResourceDictionary Source="UCHealth.Dark.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.FlatButton.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
@@ -34,13 +34,17 @@
                 <Setter Property="Padding" Value="1"/>
                 <Setter Property="Margin" Value="0,3"/>
                 <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TabItem}}" Value="False">
+                        <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
+                        <Setter Property="Background" Value="{StaticResource UCHealth.Secondary.Graphite}"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=TabItem}}" Value="True">
+                        <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
+                        <Setter Property="Background" Value="{StaticResource UCHealth.Secondary.GraniteGray}"/>
+                    </DataTrigger>
                     <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TabItem}}" Value="True">
                         <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
                         <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TabItem}}" Value="False">
-                        <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
-                        <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Gray8}"/>
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
@@ -52,7 +56,7 @@
     <TabControl ItemsSource="{Binding Plans}" mah:TabControlHelper.Underlined="SelectedTabItem" TabStripPlacement="Bottom">
         <TabControl.ItemTemplate>
             <DataTemplate>
-                <TextBlock Text="{Binding PlanId}"/>
+                <TextBlock Text="{Binding PlanId}" Foreground="{StaticResource UCHealth.Secondary.SoftWhite}"/>
             </DataTemplate>
         </TabControl.ItemTemplate>
         <TabControl.ContentTemplate>
@@ -66,8 +70,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="Physics-Check" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="15"/>
-                    <DockPanel Grid.Column="1" Margin="10" Background="#151515">
+                    <Image Source="/Physics-Check.Views;component/sys_rev_wht_rgb.png" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <DockPanel Grid.Column="1" Margin="10" Background="{StaticResource UCHealth.Primary.UCHealthRed}">
                         <TextBlock Text="" DockPanel.Dock="Right"/>
                         <StackPanel DockPanel.Dock="Right">
                             <TextBlock Text="{Binding PlanDose}" Margin="5,15,25,2" HorizontalAlignment="Right"/>
@@ -98,6 +102,7 @@
                                             <DockPanel>
                                                 <!--#region Checklist Item-->
                                                 <TextBlock Text="{Binding Text}"
+                                                           Foreground="{StaticResource UCHealth.Secondary.SoftWhite}"
                                                            DockPanel.Dock="Top"
                                                            Margin="0,2"/>
                                                 <!--#endregion-->
@@ -112,7 +117,7 @@
                                                 <TextBlock Text="{Binding DisplayedResults}" 
                                                            DockPanel.Dock="Top"
                                                            Visibility="{Binding TargetDropDown, Converter={StaticResource NullableToVisibilityConverter}}" 
-                                                           Foreground="{StaticResource MahApps.Brushes.AccentBase}"
+                                                           Foreground="{StaticResource UCHealth.Tertiary.GlacierGray}"
                                                            Margin="10,2"/>
                                                 <!--#endregion-->
                                                 <!--#region Treatment Appointment Calendar-->
@@ -154,7 +159,7 @@
                                                 <!--#endregion-->
                                                 <!--#region Text Result-->
                                                 <TextBlock local:EsapiResultConverter.FormattedText="{Binding EsapiText}" 
-                                                           Foreground="{StaticResource MahApps.Brushes.AccentBase}"
+                                                           Foreground="{StaticResource UCHealth.Tertiary.GlacierGray}"
                                                            Visibility="{Binding EsapiText, Converter={StaticResource NullableToVisibilityConverter}}"
                                                            DockPanel.Dock="Top"
                                                            VerticalAlignment="Center"

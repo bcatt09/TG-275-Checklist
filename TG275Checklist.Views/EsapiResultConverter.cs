@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Media;
 using System.Xml;
 
 namespace TG275Checklist.Views
@@ -54,19 +55,19 @@ namespace TG275Checklist.Views
                     {
                         case "<PASS>":
                             var pass = new Run(content);
-                            pass.Foreground = System.Windows.Media.Brushes.LightGreen;
+                            pass.Foreground = Brushes.LightGreen;
                             return pass;
                         case "<FAIL>":
                             var fail = new Run(content);
-                            fail.Foreground = System.Windows.Media.Brushes.Salmon;
+                            fail.Foreground = Brushes.Salmon;
                             return fail;
                         case "<WARN>":
                             var warn = new Run(content);
-                            warn.Foreground = System.Windows.Media.Brushes.Khaki;
+                            warn.Foreground = Brushes.Khaki;
                             return warn;
                         case "<HIGHLIGHT>":
                             var highlight = new Run(content);
-                            highlight.Foreground = System.Windows.Media.Brushes.MediumOrchid;
+                            highlight.Foreground = Brushes.MediumOrchid;
                             return highlight;
                         case "<BOLD>":
                             return new Bold(Traverse(content));
@@ -200,6 +201,15 @@ namespace TG275Checklist.Views
 
             if (textBlock != null)
                 textBlock.Inlines.Add(Traverse(value));
+        }
+
+        private static SolidColorBrush GetBrush(string resourceKey)
+        {
+            if (Application.Current.Resources.Contains(resourceKey))
+            {
+                return Application.Current.Resources[resourceKey] as SolidColorBrush;
+            }
+            throw new KeyNotFoundException($"The resource key '{resourceKey}' was not found in Application.Current.Resources.");
         }
     }
 }
