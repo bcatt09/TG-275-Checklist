@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Windows.Data;
 using System.Windows;
 using static TG275Checklist.Model.HelperDataTypes;
+using System.Linq;
 
 namespace TG275Checklist.Views
 {
@@ -20,8 +21,17 @@ namespace TG275Checklist.Views
             var brushConverter = new System.Windows.Media.BrushConverter();
 
             foreach (var apptDate in appts)
+            {
+                var otherNonWhiteAppts = appts.Where(x => x.ApptTime.Date == apptDate.ApptTime.Date && x.ApptColor != "#FFFFFF");
+
                 if (apptDate.ApptTime.Date == date.Date)
-                    return brushConverter.ConvertFrom(apptDate.ApptColor);
+                {
+                    if (otherNonWhiteAppts.Any())
+                        return brushConverter.ConvertFrom(otherNonWhiteAppts.First().ApptColor);
+                    else
+                        return brushConverter.ConvertFrom(apptDate.ApptColor);
+                }
+            }
 
             return "";
         }
