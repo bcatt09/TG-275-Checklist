@@ -63,10 +63,10 @@ module Prescription =
                  | notes, comment -> $"\n{tab}" + notes.Replace("\n",$"\n{tab}") + "\n" + comment.Replace("\n",$"\n{tab}")
 
             EsapiResults.fromString ($"Prescription Name: {rx.Name}{revision}
-Site: {rx.Site}
+Site: {ValidatedText(Highlight, rx.Site)}
 Prescribe To:
 {tab}{targets}
-Primary/Boost: {toTitleCase rx.PhaseType}
+Primary/Boost: {ValidatedText(Highlight, toTitleCase rx.PhaseType)}
 Mode: {modes}
 Technique: {rx.Technique}
 Energy: {energies}
@@ -110,6 +110,16 @@ Other Linked Plans: {linkedPlans}")
             prescriptionVsPlanOutput $"{rx.Status} by {rx.DisplayName} ({rx.Id}) at {rx.DateTime}" $"{planErr}"
         | Error rxErr, Ok plan -> prescriptionVsPlanOutput $"{rxErr}" $"{plan.Status} by {plan.DisplayName} ({plan.Id}) at {plan.DateTime}"
         | Error rxErr, Error planErr -> prescriptionVsPlanOutput $"{rxErr}" $"{planErr}"
+
+    /// <summary>
+    /// Lists Rx site
+    /// </summary>
+    let getPrescriptionSite: EsapiCall = fun plan ->
+        let rx = plan.RTPrescription
+        let rxSite = checkForPrescription rx (rx.Site)
+        match rxSite with
+        | Ok site -> EsapiResults.fromString $"{ValidatedText(Highlight, site)}"
+        | Error rxErr -> EsapiResults.fromString $"{rxErr}"
 
     /// <summary>
     /// Gets Prescription and Plan Dose info and highlights based on their equivalence
@@ -254,7 +264,7 @@ Other Linked Plans: {linkedPlans}")
 
     let getPrescriptionVsPlanTechnique: EsapiCall = fun plan ->
         let rx = plan.RTPrescription
-        let rxText = checkForPrescription rx (rx.Technique.Substring(1, rx.Technique.Length - 2))
+        let rxText = checkForPrescription rx rx.Technique//(rx.Technique.Substring(1, rx.Technique.Length - 2))
 
         let planText = 
             match plan.Beams |> Seq.filter (fun b -> not b.IsSetupField) with

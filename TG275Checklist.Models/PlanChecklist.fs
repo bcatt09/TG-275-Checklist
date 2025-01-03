@@ -20,7 +20,7 @@ module PlanChecklist =
         [
             "Prescription (with respect to standard of care, institutional clinical guidelines or clinical trial is applicable)", Some getFullPrescription
             "Final plan and prescription approval by physician", Some getPrescriptionVsPlanApprovals
-            "Site and laterality (incl. medical chart to confirm laterality)", None // TODO
+            "Site and laterality (incl. medical chart to confirm laterality)", Some getPrescriptionSite // TODO check laterality
             "Prescription vs consult note (e.g. physician report in EMR on plans for treatment)", None
             "Total dose, dose/fractionation, number of fractions", Some getPrescriptionVsPlanDose
             "Fractionation pattern and regimen (e.g. daily, BID, Quad Shot, regular plan follow by boost, etc.)", Some getPrescriptionVsPlanFractionationPattern
