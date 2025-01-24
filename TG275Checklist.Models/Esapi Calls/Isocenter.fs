@@ -54,9 +54,9 @@ module Isocenter =
                         then sprintf "\n%sNo shifts" tab
                         else
                             sprintf "%s%s%s" 
-                                (if shift.x > 0.1 then sprintf "\n%sPatient left: %.1f cm" tab shift.x      else if shift.x < -0.1 then sprintf "\n%sPatient right: %.1f cm" tab -shift.x    else "")
-                                (if shift.z > 0.1 then sprintf "\n%sPatient superior: %.1f cm" tab shift.z  else if shift.z < -0.1 then sprintf "\n%sPatient inferior: %.1f cm" tab -shift.z else "")
-                                (if shift.y > 0.1 then sprintf "\n%sPatient posterior: %.1f cm" tab shift.y else if shift.y < -0.1 then sprintf "\n%sPatient anterior: %.1f cm" tab -shift.y else ""))
+                                (if shift.x > 0.1 then sprintf "\n%sLeft: %.1f cm" tab shift.x      else if shift.x < -0.1 then sprintf "\n%sRight: %.1f cm" tab -shift.x    else "")
+                                (if shift.y > 0.1 then sprintf "\n%sUp: %.1f cm" tab shift.y else if shift.y < -0.1 then sprintf "\n%sDown: %.1f cm" tab -shift.y else "")
+                                (if shift.z > 0.1 then sprintf "\n%sOut: %.1f cm" tab shift.z  else if shift.z < -0.1 then sprintf "\n%sIn: %.1f cm" tab -shift.z else ""))
                     |> String.concat "\n"))
             |> String.concat "\n"
         
