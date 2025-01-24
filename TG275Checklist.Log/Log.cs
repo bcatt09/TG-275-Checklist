@@ -48,8 +48,10 @@ namespace TG275Checklist.Log
             userName = context.CurrentUser.Name;
             patientName = context.Patient.LastName + ", " + context.Patient.FirstName + " (" + context.Patient.Id + ")";
             planOrImageName = (context.PlanSetup != null) ? $"{context.PlanSetup.Id} ({context.Course})" : context.Image.Id;
+
             logFullPath = Path.Combine(exePath, logRelativePath);
             oldLogFullPath = Path.Combine(GetAssemblyDirectory(), oldLogRelativePath);
+
             if (File.Exists(logFullPath) && DateTime.Now.Day != File.GetLastWriteTime(logFullPath).Day)
             {
                 File.Copy(logFullPath, oldLogFullPath, overwrite: true);
@@ -63,7 +65,15 @@ namespace TG275Checklist.Log
             this.userName = userName;
             this.patientName = patientName;
             planOrImageName = planNames;
+
             logFullPath = Path.Combine(exePath, logRelativePath);
+            oldLogFullPath = Path.Combine(GetAssemblyDirectory(), oldLogRelativePath);
+
+            if (File.Exists(logFullPath) && DateTime.Now.Day != File.GetLastWriteTime(logFullPath).Day)
+            {
+                File.Copy(logFullPath, oldLogFullPath, overwrite: true);
+                File.Delete(logFullPath);
+            }
         }
 
         private void WriteToLog(DateTime time, string scriptName, Severity severity, string userName, string patientName, string planOrImageName, string message)
@@ -75,6 +85,7 @@ namespace TG275Checklist.Log
 
         public void Log(string message = "", Severity severity = Severity.Info)
         {
+            WriteToLog(DateTime.Now, GetAssemblyDirectory(), Severity.Info, logFullPath, File.Exists(logFullPath).ToString(), DateTime.Now.Day.ToString(), File.GetLastWriteTime(logFullPath).Day.ToString());
             WriteToLog(DateTime.Now, instance.scriptName, severity, instance.userName, instance.patientName, instance.planOrImageName, message);
         }
 
@@ -97,7 +108,7 @@ namespace TG275Checklist.Log
 
         private static string GetAssemblyDirectory()
         {
-            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            return Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
         }
     }
 
