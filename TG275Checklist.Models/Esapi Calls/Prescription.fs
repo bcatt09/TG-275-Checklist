@@ -193,6 +193,12 @@ Other Linked Plans: {linkedPlans}")
                             machineAppts 
                             |> Seq.map(fun (x,y) -> $"{x} - {y} appointments")
                             |> String.concat "\n"
+                        let plannedOn = 
+                            let idCount = plan.Beams |> Seq.countBy(fun x -> x.TreatmentUnit.Id)
+                            if idCount |> Seq.length > 1
+                            then idCount |> Seq.map(fun (x, y) -> $"{y} beams on {x}") |> String.concat "\n"
+                            else "Planned on " + (plan.Beams |> Seq.map(fun x -> x.TreatmentUnit.Id) |> Seq.head)
+                            
                         sprintf "%A%s\n%s\n\n%s"
                             (ValidatedText(getPassWarn "Scheduled number of fractions doesn't match plan" (numScheduled = plan.NumberOfFractions.GetValueOrDefault()), $"{numScheduled} machine appointments scheduled between {DateTime.Now.AddMonths(-1).ToShortDateString()} and {DateTime.Now.AddMonths(4).ToShortDateString()}"))
                             (if Seq.length bidDays > 0
@@ -206,6 +212,7 @@ Other Linked Plans: {linkedPlans}")
                                     machineApptList
                                 else
                                     $"All appointments scheduled on {fst (machineAppts |> Seq.head)}")
+                            + $"\n{plannedOn}"
            
                 // Format output
                 match rxText with
@@ -216,7 +223,15 @@ Other Linked Plans: {linkedPlans}")
 
     let getPrescriptionVsPlanEnergy: EsapiCall = fun plan ->
         let rx = plan.RTPrescription
-        let rxText = checkForPrescription rx (rx.Energies |> String.concat $"\n{tab}")
+
+        let rxEnergies = rx.Energies
+        let planEnergies = 
+            plan.Beams 
+            |> Seq.filter (fun x -> not x.IsSetupField) 
+            |> Seq.map (fun x -> x.EnergyModeDisplayName) 
+            |> Seq.distinct
+
+        let rxText = checkForPrescription rx (seq rx.Energies)
 
         let planText = 
             match plan.Beams |> Seq.filter (fun b -> not b.IsSetupField) with
@@ -224,12 +239,19 @@ Other Linked Plans: {linkedPlans}")
             | beams ->
                 Ok(beams 
                 |> Seq.map (fun b -> b.EnergyModeDisplayName) 
-                |> Seq.distinct
-                |> String.concat $"\n{tab}")
+                |> Seq.distinct)
 
         match rxText, planText with
         // TODO: check energies against each other here
-        | Ok rx, Ok plan -> prescriptionVsPlanOutput rx plan
+        | Ok rx, Ok plan -> 
+            let equal = Seq.compareWith compare 
+                            (rxEnergies |> Seq.sort) 
+                            (planEnergies |> Seq.map (fun x -> x.Replace("X-", "")) |> Seq.sort)
+            let colorCoder result = 
+                if equal = 0 
+                    then ValidatedText(Pass, result)
+                    else ValidatedText(WarnWithoutExplanation, result)
+            prescriptionVsPlanOutput (colorCoder(rx |> String.concat $"\n{tab}")) (colorCoder(plan |> String.concat $"\n{tab}"))
         | Ok rx, Error plan -> prescriptionVsPlanOutput rx (plan)
         | Error rx, Ok plan -> prescriptionVsPlanOutput (rx) plan
         | Error rx, Error plan -> prescriptionVsPlanOutput (rx) (plan)
