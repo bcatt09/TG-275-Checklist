@@ -167,6 +167,8 @@ module DoseDistributionAndPlanQuality =
             |> String.concat "\n")
 
     let getCalculationAlgorithmInfo: EsapiCall = fun plan ->
+        let calcGrid = $"Calculation grid: {plan.Dose.XRes:f1} mm"
+
         let techniques = 
             plan.Beams
             |> Seq.filter (fun x -> not x.IsSetupField)
@@ -211,6 +213,7 @@ module DoseDistributionAndPlanQuality =
         )
         |> Seq.concat
         |> String.concat "\n\n"
+        |> (fun result -> calcGrid + "\n\n" + result)
         |> EsapiResults.fromString
 
     let getPlanSums: EsapiCall = fun plan ->
