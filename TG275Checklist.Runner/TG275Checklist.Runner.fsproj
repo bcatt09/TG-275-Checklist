@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
-    <AssemblyName>Physics-Check.esapi</AssemblyName>
+	<AssemblyName Condition="'$(Configuration)'=='Debug'">Physics-Check-Dev.esapi</AssemblyName>
+	<AssemblyName Condition="'$(Configuration)'=='Release'">Physics-Check.esapi</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
